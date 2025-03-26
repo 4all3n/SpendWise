@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "303782238242",
+    "project_id": "expenso-e44f3",
+    "storage_bucket": "expenso-e44f3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:303782238242:android:0ecb6bd35f40fb9993127b",
+        "android_client_info": {
+          "package_name": "com.fallen.expenso"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUvF-BgnliNmq09udYMWcsxah8RpRoPqg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:303782238242:android:13cb89bb0c42ca3f93127b",
+        "android_client_info": {
+          "package_name": "com.fallen.spendwise"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUvF-BgnliNmq09udYMWcsxah8RpRoPqg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

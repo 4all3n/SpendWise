@@ -41,7 +41,7 @@ This project is **open-source** and available under the **MIT License**.
 Contributions are welcome! Feel free to fork the repository, create a new branch, and submit a pull request.
 
 ## 📧 Contact
-For any queries or collaborations, reach out via [your email] or open an issue on GitHub.
+For any queries or collaborations, reach out via hpsingh7146@gmail.com or open an issue on GitHub.
 
 ---
 Made with ❤️ by Harsh Pratap Singh

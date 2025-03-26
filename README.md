@@ -23,7 +23,7 @@ SpendWise is a simple and efficient expense tracking app built using **Kotlin** 
 ## 🔧 Installation & Setup
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/spendwise.git
+   git clone https://github.com/4all3n/spendwise.git
    ```
 2. Open the project in **Android Studio**.
 3. Sync Gradle and ensure all dependencies are installed.

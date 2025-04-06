@@ -6,15 +6,21 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.navigation.compose.rememberNavController
 import com.fallen.spenwise.navigation.NavGraph
 import com.fallen.spenwise.ui.theme.SpendWiseTheme
+import com.fallen.spenwise.utils.PreferenceManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.common.api.ApiException
@@ -22,6 +28,11 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.platform.LocalContext
+import com.fallen.spenwise.navigation.Screen
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
@@ -43,13 +54,60 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    
+                    val context = LocalContext.current
+                    val preferenceManager = remember { PreferenceManager(context) }
+                    var initialDestination by remember { mutableStateOf(Screen.Welcome.route) }
+                    var isCheckingAuth by remember { mutableStateOf(true) }
+
+                    // Check auth state and set initial destination
+                    LaunchedEffect(Unit) {
+                        // Add a small delay to ensure Firebase is initialized
+                        delay(100)
+                        
+                        if (auth.currentUser != null) {
+                            initialDestination = Screen.Dashboard.route
+                            isCheckingAuth = false
+                        } else if (preferenceManager.getRememberMe()) {
+                            val savedEmail = preferenceManager.getEmail()
+                            val savedPassword = preferenceManager.getPassword()
+                            
+                            if (!savedEmail.isNullOrEmpty() && !savedPassword.isNullOrEmpty()) {
+                                auth.signInWithEmailAndPassword(savedEmail, savedPassword)
+                                    .addOnSuccessListener {
+                                        initialDestination = Screen.Dashboard.route
+                                        isCheckingAuth = false
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Log.e("MainActivity", "Auto-login failed", e)
+                                        preferenceManager.clearCredentials()
+                                        isCheckingAuth = false
+                                    }
+                            } else {
+                                isCheckingAuth = false
+                            }
+                        } else {
+                            isCheckingAuth = false
+                        }
+                    }
+
                     // Add navigation state observer
                     navController.addOnDestinationChangedListener { controller, destination, arguments ->
                         Log.d("Navigation", "Current destination: ${destination.route}")
                     }
+
+                    // Handle back press
+                    BackHandler {
+                        if (!navController.popBackStack()) {
+                            finish()
+                        }
+                    }
                     
-                    NavGraph(navController = navController)
+                    if (!isCheckingAuth) {
+                        NavGraph(
+                            navController = navController,
+                            initialDestination = initialDestination
+                        )
+                    }
                 }
             }
         }

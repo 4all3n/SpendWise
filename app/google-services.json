@@ -7,12 +7,25 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:303782238242:android:0ecb6bd35f40fb9993127b",
+        "mobilesdk_app_id": "1:303782238242:android:df0d588655d61a2993127b",
         "android_client_info": {
-          "package_name": "com.fallen.expenso"
+          "package_name": "com.fallen.spenwise"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "303782238242-tuegb7dvj1qd68o5n7f8se093h5ap9dr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fallen.spenwise",
+            "certificate_hash": "f109863ec004c21245970b734fe3557b251403c9"
+          }
+        },
+        {
+          "client_id": "303782238242-gbpfspv15uludu78ibd56r742gvvnqau.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCUvF-BgnliNmq09udYMWcsxah8RpRoPqg"
@@ -20,26 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:303782238242:android:13cb89bb0c42ca3f93127b",
-        "android_client_info": {
-          "package_name": "com.fallen.spendwise"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCUvF-BgnliNmq09udYMWcsxah8RpRoPqg"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "303782238242-gbpfspv15uludu78ibd56r742gvvnqau.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

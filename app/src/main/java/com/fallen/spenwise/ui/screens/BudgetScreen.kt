@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -25,12 +26,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import com.fallen.spenwise.model.BudgetCategory
+import com.fallen.spenwise.ui.components.BottomNavigationBar
 
 @Composable
 fun BudgetScreen(
-    onAddCategory: () -> Unit = {}
+    onNavigate: (Int) -> Unit = {}
 ) {
     var selectedMonth by remember { mutableStateOf("March 2025") }
+    var selectedTab by remember { mutableStateOf(2) }
     
     // Sample data
     val categories = remember {
@@ -61,202 +64,316 @@ fun BudgetScreen(
                 icon = R.drawable.ic_entertainment,
                 spent = 150.0,
                 budget = 300.0,
-                color = Color(0xFF8B5CF6)
+                color = Color(0xFFF59E0B)
             )
         )
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF1B1E27))
-            .padding(horizontal = 16.dp)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF1B1E27),
+                        Color(0xFF232731)
+                    )
+                )
+            )
     ) {
-        // Header
-        Text(
-            text = "Budget Settings",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.padding(top = 24.dp, bottom = 16.dp)
-        )
-
-        // Month selector
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFF232731))
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = { /* Previous month */ }) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_chevron_left),
-                    contentDescription = "Previous month",
-                    tint = Color.White
-                )
-            }
-            
-            Text(
-                text = selectedMonth,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White
-            )
-            
-            IconButton(onClick = { /* Next month */ }) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_chevron_right),
-                    contentDescription = "Next month",
-                    tint = Color.White
-                )
-            }
-        }
-
-        // Add Category Button
-        Button(
-            onClick = onAddCategory,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF8B5CF6)
-            ),
-            contentPadding = PaddingValues(16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add Category",
-                tint = Color.White
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Add Category",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White
-            )
-        }
-
-        // Categories List
         LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 80.dp)
+                .windowInsetsPadding(WindowInsets.systemBars)
         ) {
-            items(categories) { category ->
-                CategoryCard(category = category)
+            item {
+                // Header Section
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = "Budget",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Track your spending limits",
+                        fontSize = 16.sp,
+                        color = Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Month Selector Card
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        color = Color(0xFF282C35),
+                        shape = RoundedCornerShape(16.dp),
+                        tonalElevation = 4.dp
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = { /* Previous month */ },
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.1f))
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_chevron_left),
+                                    contentDescription = "Previous month",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            
+                            Text(
+                                text = selectedMonth,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                            
+                            IconButton(
+                                onClick = { /* Next month */ },
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.1f))
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_chevron_right),
+                                    contentDescription = "Next month",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Total Budget Card
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color(0xFF282C35),
+                        shape = RoundedCornerShape(16.dp),
+                        tonalElevation = 4.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp)
+                        ) {
+                            Text(
+                                text = "Total Budget",
+                                fontSize = 16.sp,
+                                color = Color.White.copy(alpha = 0.7f)
+                            )
+                            Text(
+                                text = "$2,700",
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                            LinearProgressIndicator(
+                                progress = 0.65f,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                color = Color(0xFF8B5CF6),
+                                trackColor = Color.White.copy(alpha = 0.1f)
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Spent: $1,755",
+                                    fontSize = 14.sp,
+                                    color = Color.White.copy(alpha = 0.7f)
+                                )
+                                Text(
+                                    text = "Remaining: $945",
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF10B981)
+                                )
+                            }
+                        }
+                    }
+
+                    // Add Category Button
+                    Button(
+                        onClick = { /* Add category */ },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp)
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF8B5CF6)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add Category",
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Add New Category",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    }
+
+                    Text(
+                        text = "Categories",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                }
             }
+
+            // Categories List
+            items(categories) { category ->
+                CategoryCard(
+                    category = category,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp)
+                )
+            }
+
+            // Bottom spacing
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+
+        // Bottom Navigation Bar
+        Box(
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            BottomNavigationBar(
+                selectedTab = selectedTab,
+                onTabSelected = { newTab ->
+                    if (newTab != selectedTab) {
+                        selectedTab = newTab
+                        onNavigate(newTab)
+                    }
+                }
+            )
         }
     }
 }
 
 @Composable
-fun CategoryCard(category: BudgetCategory) {
-    var showMenu by remember { mutableStateOf(false) }
-    
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF232731))
-            .padding(16.dp)
+private fun CategoryCard(
+    category: BudgetCategory,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = Color(0xFF282C35),
+        shape = RoundedCornerShape(16.dp),
+        tonalElevation = 4.dp
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Category Icon
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(category.color.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(id = category.icon),
-                        contentDescription = category.name,
-                        tint = category.color,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                Text(
-                    text = category.name,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White
-                )
-            }
-
-            // Menu Icon
-            IconButton(onClick = { showMenu = true }) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_more),
-                    contentDescription = "More options",
-                    tint = Color.White.copy(alpha = 0.7f)
-                )
-            }
-
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { showMenu = false },
-                modifier = Modifier.background(Color(0xFF2A2F3C))
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Edit", color = Color.White) },
-                    onClick = { showMenu = false }
-                )
-                DropdownMenuItem(
-                    text = { Text("Delete", color = Color.Red) },
-                    onClick = { showMenu = false }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Progress Bar
-        val progress = (category.spent / category.budget).toFloat().coerceIn(0f, 1f)
-        val progressColor = when {
-            progress >= 1f -> Color.Red
-            progress >= 0.8f -> Color(0xFFFFA500)
-            else -> category.color
-        }
-
-        LinearProgressIndicator(
-            progress = progress,
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = progressColor,
-            trackColor = Color.White.copy(alpha = 0.1f)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Spent and Budget Text
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(16.dp)
         ) {
-            Text(
-                text = "Spent: $${category.spent.toInt()}",
-                fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.7f)
-            )
-            Text(
-                text = "Budget: $${category.budget.toInt()}",
-                fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.7f)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Category Icon
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(category.color.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = category.icon),
+                            contentDescription = null,
+                            tint = category.color,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    // Category Details
+                    Column {
+                        Text(
+                            text = category.name,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "${(category.spent / category.budget * 100).toInt()}% of budget",
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+
+                // Amount
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = "$${category.spent.toInt()}",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "of $${category.budget.toInt()}",
+                        fontSize = 14.sp,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Progress Bar
+            LinearProgressIndicator(
+                progress = (category.spent / category.budget).toFloat(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = category.color,
+                trackColor = Color.White.copy(alpha = 0.1f)
             )
         }
     }

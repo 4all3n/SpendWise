@@ -31,6 +31,7 @@ import com.google.firebase.auth.FirebaseAuth
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.min
+import com.fallen.spenwise.ui.components.BottomNavigationBar
 
 // Data class for Transaction
 data class Transaction(
@@ -43,9 +44,12 @@ data class Transaction(
 )
 
 @Composable
-fun DashboardScreen() {
+fun DashboardScreen(
+    onBudgetClick: () -> Unit = {}
+) {
     val currentUser = FirebaseAuth.getInstance().currentUser
     val userName = currentUser?.displayName ?: "User"
+    var selectedTab by remember { mutableStateOf(0) }
     val lazyListState = rememberLazyListState()
     val transactions = remember { getSampleTransactions() }
 
@@ -350,42 +354,17 @@ fun DashboardScreen() {
             }
         }
 
-        // Bottom Navigation with blur effect
-        Surface(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(80.dp),
-            color = Color(0xFF2A2F3C),
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        // Bottom Navigation Bar
+        Box(
+            modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 32.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.Center),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    NavItem(
-                        icon = R.drawable.ic_home,
-                        isSelected = true
-                    )
-                    NavItem(
-                        icon = R.drawable.ic_stats
-                    )
-                    NavItem(
-                        icon = R.drawable.ic_wallet
-                    )
-                    NavItem(
-                        icon = R.drawable.ic_settings
-                    )
+            BottomNavigationBar(
+                selectedTab = selectedTab,
+                onTabSelected = { newTab ->
+                    selectedTab = newTab
+                    if (newTab == 2) onBudgetClick()
                 }
-            }
+            )
         }
     }
 }
@@ -420,44 +399,6 @@ private fun QuickActionButton(
             fontSize = 14.sp,
             color = Color.White,
             fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-@Composable
-private fun NavItem(
-    icon: Int,
-    isSelected: Boolean = false
-) {
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(
-                if (isSelected) {
-                    Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF8D5CF5),
-                            Color(0xFFB06AB3)
-                        )
-                    )
-                } else {
-                    Brush.linearGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.1f),
-                            Color.White.copy(alpha = 0.05f)
-                        )
-                    )
-                }
-            )
-            .clickable { /* TODO: Handle navigation */ },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            painter = painterResource(id = icon),
-            contentDescription = null,
-            tint = if (isSelected) Color.White else Color.White.copy(alpha = 0.6f),
-            modifier = Modifier.size(20.dp)
         )
     }
 }

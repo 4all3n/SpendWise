@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
@@ -27,6 +28,221 @@ import com.fallen.spenwise.ui.components.BottomNavigationBar
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(
+    onNavigateBack: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF1B1E27),
+                        Color(0xFF232731)
+                    )
+                )
+            )
+    ) {
+        // Decorative Background Elements
+        Box(
+            modifier = Modifier
+                .size(300.dp)
+                .offset(x = (-50).dp, y = (-50).dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFF8B5CF6).copy(alpha = 0.2f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+        Box(
+            modifier = Modifier
+                .size(300.dp)
+                .offset(x = 200.dp, y = 200.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFFB06AB3).copy(alpha = 0.15f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+        ) {
+            // Top Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onNavigateBack,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF2A2F3C))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
+                }
+                Text(
+                    text = "Settings",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                // Placeholder for symmetry
+                Spacer(modifier = Modifier.size(40.dp))
+            }
+
+            // Settings Content
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp)
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Settings Items
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color(0xFF2A2F3C),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Account Settings",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        SettingsItem(
+                            title = "Profile",
+                            subtitle = "Manage your personal information"
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        SettingsItem(
+                            title = "Security",
+                            subtitle = "Password and authentication"
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        SettingsItem(
+                            title = "Notifications",
+                            subtitle = "Customize your notifications"
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color(0xFF2A2F3C),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "App Settings",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        SettingsItem(
+                            title = "Currency",
+                            subtitle = "Set your preferred currency"
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        SettingsItem(
+                            title = "Theme",
+                            subtitle = "Customize app appearance"
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        SettingsItem(
+                            title = "Language",
+                            subtitle = "Choose your language"
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color(0xFF2A2F3C),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "About",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        SettingsItem(
+                            title = "Version",
+                            subtitle = "1.0.0"
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        SettingsItem(
+                            title = "Terms of Service",
+                            subtitle = "Read our terms and conditions"
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        SettingsItem(
+                            title = "Privacy Policy",
+                            subtitle = "Read our privacy policy"
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsItem(
+    title: String,
+    subtitle: String
+) {
+    Column {
+        Text(
+            text = title,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.White
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = subtitle,
+            fontSize = 14.sp,
+            color = Color.White.copy(alpha = 0.6f)
+        )
+    }
+}
 
 @Composable
 fun SettingsScreen(
@@ -69,6 +285,34 @@ fun SettingsScreen(
                 )
             )
     ) {
+        // Decorative Background Elements
+        Box(
+            modifier = Modifier
+                .size(300.dp)
+                .offset(x = (-50).dp, y = (-50).dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFF8B5CF6).copy(alpha = 0.2f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+        Box(
+            modifier = Modifier
+                .size(300.dp)
+                .offset(x = 200.dp, y = 200.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFFB06AB3).copy(alpha = 0.15f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()

@@ -47,6 +47,21 @@ class MainActivity : ComponentActivity() {
         // Initialize Firebase
         FirebaseApp.initializeApp(this)
         
+        // Check for Google Sign-In result
+        intent?.getParcelableExtra<GoogleSignInAccount>("google_sign_in_result")?.let { account ->
+            val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+            FirebaseAuth.getInstance().signInWithCredential(credential)
+                .addOnCompleteListener(this) { task ->
+                    if (task.isSuccessful) {
+                        // Sign in success, update UI with the signed-in user's information
+                        Log.d("MainActivity", "signInWithCredential:success")
+                    } else {
+                        // If sign in fails, display a message to the user.
+                        Log.w("MainActivity", "signInWithCredential:failure", task.exception)
+                    }
+                }
+        }
+
         setContent {
             SpendWiseTheme {
                 Surface(
@@ -122,8 +137,7 @@ class MainActivity : ComponentActivity() {
                 val account = task.getResult(ApiException::class.java)
                 firebaseAuthWithGoogle(account)
             } catch (e: ApiException) {
-                Log.w("GoogleSignIn", "Google sign in failed", e)
-                // TODO: Show error message to user
+                Log.w("MainActivity", "Google sign in failed", e)
             }
         }
     }
@@ -147,7 +161,11 @@ class MainActivity : ComponentActivity() {
                 }
                 
                 Log.d("GoogleSignIn", "signInWithCredential:success")
-                // TODO: Navigate to main screen
+                // Navigate to dashboard
+                val intent = Intent(this, MainActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
             }
             .addOnFailureListener { e ->
                 Log.w("GoogleSignIn", "signInWithCredential:failure", e)

@@ -36,6 +36,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import android.util.Log
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 
 @Composable
 fun LoginScreen(
@@ -43,6 +45,8 @@ fun LoginScreen(
     onSignUpClick: () -> Unit,
     onLoginSuccess: () -> Unit = {}
 ) {
+    val RC_SIGN_IN = 9001
+    
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
@@ -82,43 +86,89 @@ fun LoginScreen(
     }
     
     // Configure Google Sign In
-    val gso = remember {
-        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("YOUR_WEB_CLIENT_ID")
+    val googleSignInClient by lazy {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken("303782238242-gbpfspv15uludu78ibd56r742gvvnqau.apps.googleusercontent.com") // Replace with your actual web client ID
             .requestEmail()
             .build()
-    }
-    
-    val googleSignInClient = remember {
         GoogleSignIn.getClient(context, gso)
     }
     
+    // Function to handle email/password login
+    fun signInWithEmail(email: String, password: String) {
+        // Validate input
+        if (email.isBlank()) {
+            errorMessage = "Please enter your email"
+            showError = true
+            return
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            errorMessage = "Please enter a valid email address"
+            showError = true
+            return
+        }
+        if (password.isBlank()) {
+            errorMessage = "Please enter your password"
+            showError = true
+            return
+        }
+        if (password.length < 6) {
+            errorMessage = "Password must be at least 6 characters"
+            showError = true
+            return
+        }
+
+        FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    // Save credentials if Remember Me is checked
+                    if (rememberMe) {
+                        preferenceManager.saveCredentials(email, password)
+                        preferenceManager.setRememberMe(true)
+                    } else {
+                        preferenceManager.clearCredentials()
+                        preferenceManager.setRememberMe(false)
+                    }
+                    onLoginSuccess()
+                } else {
+                    errorMessage = when (task.exception?.message) {
+                        "The password is invalid or the user does not have a password." -> "Invalid password"
+                        "There is no user record corresponding to this identifier. The user may have been deleted." -> "No account found with this email"
+                        else -> task.exception?.message ?: "Login failed"
+                    }
+                    showError = true
+                }
+            }
+    }
+
     // Function to handle Google Sign In
     fun signInWithGoogle() {
-        activity?.let {
-            val signInIntent = googleSignInClient.signInIntent
-            it.startActivityForResult(signInIntent, RC_SIGN_IN)
+        val signInIntent = googleSignInClient.signInIntent
+        (context as Activity).startActivityForResult(signInIntent, RC_SIGN_IN)
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            val account = GoogleSignIn.getLastSignedInAccount(context)
+            if (account != null) {
+                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                FirebaseAuth.getInstance().signInWithCredential(credential)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            onLoginSuccess()
+                        } else {
+                            errorMessage = task.exception?.message ?: "Google sign in failed"
+                            showError = true
+                        }
+                    }
+            }
+        } catch (e: Exception) {
+            Log.w("LoginScreen", "Google sign in failed", e)
+            errorMessage = "Google sign in failed"
+            showError = true
         }
     }
 
-    // Function to handle email/password login
-    fun handleLogin() {
-        FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener {
-                if (rememberMe) {
-                    preferenceManager.saveCredentials(email, password)
-                } else {
-                    preferenceManager.clearCredentials()
-                }
-                Log.d("LoginScreen", "Login successful")
-                onLoginSuccess()
-            }
-            .addOnFailureListener { e ->
-                errorMessage = e.message ?: "Login failed"
-                showError = true
-            }
-    }
-    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -356,7 +406,7 @@ fun LoginScreen(
 
             // Sign In Button
             Button(
-                onClick = { handleLogin() },
+                onClick = { signInWithEmail(email, password) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -476,6 +526,4 @@ fun LoginScreen(
             }
         }
     }
-}
-
-private const val RC_SIGN_IN = 9001 
+} 

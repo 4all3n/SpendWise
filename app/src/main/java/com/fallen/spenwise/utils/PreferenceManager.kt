@@ -31,6 +31,10 @@ class PreferenceManager(context: Context) {
         }
     }
 
+    fun setRememberMe(value: Boolean) {
+        sharedPreferences.edit().putBoolean(KEY_REMEMBER_ME, value).apply()
+    }
+
     fun getRememberMe(): Boolean = sharedPreferences.getBoolean(KEY_REMEMBER_ME, false)
     fun getEmail(): String? = sharedPreferences.getString(KEY_EMAIL, null)
     fun getPassword(): String? = sharedPreferences.getString(KEY_PASSWORD, null)

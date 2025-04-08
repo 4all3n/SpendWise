@@ -44,6 +44,8 @@ fun SignUpScreen(
     onSignInClick: () -> Unit,
     onSignUpSuccess: () -> Unit
 ) {
+    val RC_SIGN_IN = 9001
+    
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -76,33 +78,75 @@ fun SignUpScreen(
     val activity = context as? Activity
     
     // Configure Google Sign In
-    val gso = remember {
-        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("YOUR_WEB_CLIENT_ID")
+    val googleSignInClient by lazy {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken("303782238242-gbpfspv15uludu78ibd56r742gvvnqau.apps.googleusercontent.com") // Replace with your actual web client ID
             .requestEmail()
             .build()
-    }
-    
-    val googleSignInClient = remember {
         GoogleSignIn.getClient(context, gso)
     }
     
     // Function to handle Google Sign In
     fun signInWithGoogle() {
-        activity?.let {
-            val signInIntent = googleSignInClient.signInIntent
-            it.startActivityForResult(signInIntent, RC_SIGN_IN)
+        val signInIntent = googleSignInClient.signInIntent
+        (context as Activity).startActivityForResult(signInIntent, RC_SIGN_IN)
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            val account = GoogleSignIn.getLastSignedInAccount(context)
+            if (account != null) {
+                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                FirebaseAuth.getInstance().signInWithCredential(credential)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            onSignUpSuccess()
+                        } else {
+                            errorMessage = task.exception?.message ?: "Google sign in failed"
+                            showError = true
+                        }
+                    }
+            }
+        } catch (e: Exception) {
+            Log.w("SignUpScreen", "Google sign in failed", e)
+            errorMessage = "Google sign in failed"
+            showError = true
         }
     }
 
     // Function to handle sign up
-    fun handleSignUp() {
+    fun signUpWithEmail(email: String, password: String) {
+        // Validate input
+        if (fullName.isBlank()) {
+            errorMessage = "Please enter your full name"
+            showError = true
+            return
+        }
+        if (email.isBlank()) {
+            errorMessage = "Please enter your email"
+            showError = true
+            return
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            errorMessage = "Please enter a valid email address"
+            showError = true
+            return
+        }
+        if (password.isBlank()) {
+            errorMessage = "Please enter a password"
+            showError = true
+            return
+        }
+        if (password.length < 6) {
+            errorMessage = "Password must be at least 6 characters"
+            showError = true
+            return
+        }
         if (password != confirmPassword) {
             errorMessage = "Passwords do not match"
             showError = true
             return
         }
-        
         if (!termsAccepted) {
             errorMessage = "Please accept the terms and conditions"
             showError = true
@@ -110,25 +154,32 @@ fun SignUpScreen(
         }
 
         FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password)
-            .addOnSuccessListener { authResult ->
-                // Update user profile with full name
-                val profileUpdates = UserProfileChangeRequest.Builder()
-                    .setDisplayName(fullName)
-                    .build()
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    // Update user profile with full name
+                    val user = FirebaseAuth.getInstance().currentUser
+                    val profileUpdates = UserProfileChangeRequest.Builder()
+                        .setDisplayName(fullName)
+                        .build()
 
-                authResult.user?.updateProfile(profileUpdates)
-                    ?.addOnSuccessListener {
-                        Log.d("SignUpScreen", "Account created successfully")
-                        onSignUpSuccess()
+                    user?.updateProfile(profileUpdates)
+                        ?.addOnSuccessListener {
+                            Log.d("SignUpScreen", "User profile updated with name: $fullName")
+                            onSignUpSuccess()
+                        }
+                        ?.addOnFailureListener { e ->
+                            Log.w("SignUpScreen", "Failed to update user profile", e)
+                            onSignUpSuccess() // Still continue with sign up
+                        }
+                } else {
+                    errorMessage = when (task.exception?.message) {
+                        "The email address is already in use by another account." -> "This email is already registered"
+                        "The email address is badly formatted." -> "Please enter a valid email address"
+                        "The given password is invalid. [ Password should be at least 6 characters ]" -> "Password must be at least 6 characters"
+                        else -> task.exception?.message ?: "Sign up failed"
                     }
-                    ?.addOnFailureListener { e ->
-                        errorMessage = e.message ?: "Failed to update profile"
-                        showError = true
-                    }
-            }
-            .addOnFailureListener { e ->
-                errorMessage = e.message ?: "Sign up failed"
-                showError = true
+                    showError = true
+                }
             }
     }
 
@@ -454,7 +505,7 @@ fun SignUpScreen(
 
             // Create Account Button
             Button(
-                onClick = { handleSignUp() },
+                onClick = { signUpWithEmail(email, password) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -576,6 +627,4 @@ fun SignUpScreen(
             }
         }
     }
-}
-
-private const val RC_SIGN_IN = 9001 
+} 

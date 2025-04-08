@@ -51,7 +51,8 @@ fun NavGraph(
         
         composable(route = Screen.Dashboard.route) {
             DashboardScreen(
-                onBudgetClick = { navController.navigate(Screen.Budget.route) }
+                onBudgetClick = { navController.navigate(Screen.Budget.route) },
+                onSettingsClick = { navController.navigate(Screen.Settings.route) }
             )
         }
 
@@ -62,7 +63,30 @@ fun NavGraph(
                         0 -> navController.navigate(Screen.Dashboard.route) {
                             popUpTo(Screen.Dashboard.route) { inclusive = true }
                         }
-                        // Add other tab navigation cases as needed
+                        3 -> navController.navigate(Screen.Settings.route) {
+                            popUpTo(Screen.Settings.route) { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
+        composable(route = Screen.Settings.route) {
+            SettingsScreen(
+                onNavigate = { tabIndex ->
+                    when (tabIndex) {
+                        0 -> navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                        2 -> navController.navigate(Screen.Budget.route) {
+                            popUpTo(Screen.Budget.route) { inclusive = true }
+                        }
+                    }
+                },
+                onSignOut = {
+                    FirebaseAuth.getInstance().signOut()
+                    navController.navigate(Screen.Welcome.route) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )

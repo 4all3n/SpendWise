@@ -45,7 +45,8 @@ data class Transaction(
 
 @Composable
 fun DashboardScreen(
-    onBudgetClick: () -> Unit = {}
+    onBudgetClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {}
 ) {
     val currentUser = FirebaseAuth.getInstance().currentUser
     val userName = currentUser?.displayName ?: "User"
@@ -362,7 +363,10 @@ fun DashboardScreen(
                 selectedTab = selectedTab,
                 onTabSelected = { newTab ->
                     selectedTab = newTab
-                    if (newTab == 2) onBudgetClick()
+                    when (newTab) {
+                        2 -> onBudgetClick()
+                        3 -> onSettingsClick()
+                    }
                 }
             )
         }

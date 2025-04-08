@@ -11,6 +11,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,7 +48,8 @@ data class Transaction(
 @Composable
 fun DashboardScreen(
     onBudgetClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {}
+    onSettingsClick: () -> Unit = {},
+    onAddTransaction: () -> Unit = {}
 ) {
     val currentUser = FirebaseAuth.getInstance().currentUser
     val userName = currentUser?.displayName ?: "User"
@@ -311,6 +314,84 @@ fun DashboardScreen(
                                 percentage = "20%",
                                 color = Color(0xFF4CAF50)
                             )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // Enhanced Add Transaction Button Section
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp)
+                            .clickable(onClick = onAddTransaction),
+                        shape = RoundedCornerShape(28.dp),
+                        tonalElevation = 8.dp,
+                        shadowElevation = 8.dp
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(
+                                            Color(0xFF8D5CF5),
+                                            Color(0xFFB06AB3)
+                                        )
+                                    )
+                                )
+                                .padding(horizontal = 32.dp, vertical = 20.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Glowing add icon
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(
+                                            color = Color.White.copy(alpha = 0.15f),
+                                            shape = CircleShape
+                                        )
+                                        .padding(2.dp)
+                                ) {
+                                    Surface(
+                                        modifier = Modifier.fillMaxSize(),
+                                        shape = CircleShape,
+                                        color = Color.White.copy(alpha = 0.9f)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Add,
+                                                contentDescription = "Add Transaction",
+                                                tint = Color(0xFF8D5CF5),
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = "Add Transaction",
+                                        fontSize = 22.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = "Income or Expense",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.White.copy(alpha = 0.95f)
+                                    )
+                                }
+                            }
                         }
                     }
 

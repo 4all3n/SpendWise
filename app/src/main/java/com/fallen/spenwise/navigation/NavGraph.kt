@@ -51,8 +51,15 @@ fun NavGraph(
         
         composable(route = Screen.Dashboard.route) {
             DashboardScreen(
-                onBudgetClick = { navController.navigate(Screen.Budget.route) },
-                onSettingsClick = { navController.navigate(Screen.Settings.route) }
+                onBudgetClick = {
+                    navController.navigate(Screen.Budget.route)
+                },
+                onSettingsClick = {
+                    navController.navigate(Screen.Settings.route)
+                },
+                onAddTransaction = {
+                    navController.navigate(Screen.AddTransaction.route)
+                }
             )
         }
 
@@ -88,6 +95,18 @@ fun NavGraph(
                     navController.navigate(Screen.Welcome.route) {
                         popUpTo(0) { inclusive = true }
                     }
+                }
+            )
+        }
+
+        composable(route = Screen.AddTransaction.route) {
+            AddTransactionScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onSaveTransaction = { type, title, amount, category, date, note ->
+                    // TODO: Handle saving transaction
+                    navController.popBackStack()
                 }
             )
         }

@@ -59,6 +59,9 @@ fun NavGraph(
                 },
                 onAddTransaction = {
                     navController.navigate(Screen.AddTransaction.route)
+                },
+                onNavigateToTransactions = {
+                    navController.navigate(Screen.Transactions.route)
                 }
             )
         }
@@ -69,6 +72,9 @@ fun NavGraph(
                     when (tabIndex) {
                         0 -> navController.navigate(Screen.Dashboard.route) {
                             popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                        1 -> navController.navigate(Screen.Transactions.route) {
+                            popUpTo(Screen.Transactions.route) { inclusive = true }
                         }
                         3 -> navController.navigate(Screen.Settings.route) {
                             popUpTo(Screen.Settings.route) { inclusive = true }
@@ -84,6 +90,9 @@ fun NavGraph(
                     when (tabIndex) {
                         0 -> navController.navigate(Screen.Dashboard.route) {
                             popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                        1 -> navController.navigate(Screen.Transactions.route) {
+                            popUpTo(Screen.Transactions.route) { inclusive = true }
                         }
                         2 -> navController.navigate(Screen.Budget.route) {
                             popUpTo(Screen.Budget.route) { inclusive = true }
@@ -107,6 +116,26 @@ fun NavGraph(
                 onSaveTransaction = { type, title, amount, category, date, note ->
                     // TODO: Handle saving transaction
                     navController.popBackStack()
+                }
+            )
+        }
+
+        composable(route = Screen.Transactions.route) {
+            TransactionScreen(
+                onNavigateToHome = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.Dashboard.route) { inclusive = true }
+                    }
+                },
+                onNavigateToStats = {
+                    navController.navigate(Screen.Budget.route) {
+                        popUpTo(Screen.Budget.route) { inclusive = true }
+                    }
+                },
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route) {
+                        popUpTo(Screen.Settings.route) { inclusive = true }
+                    }
                 }
             )
         }

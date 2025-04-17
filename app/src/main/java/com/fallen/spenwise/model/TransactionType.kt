@@ -1,5 +1,12 @@
 package com.fallen.spenwise.model
 
 enum class TransactionType {
-    EXPENSE, INCOME, FOOD, SHOPPING, BILLS, ENTERTAINMENT, TRANSPORT, OTHERS
+    FOOD,
+    SHOPPING,
+    TRANSPORT,
+    ENTERTAINMENT,
+    INCOME,
+    EXPENSE,
+    BILLS,
+    OTHERS
 } 

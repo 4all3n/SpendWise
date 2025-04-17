@@ -34,22 +34,15 @@ import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.min
 import com.fallen.spenwise.ui.components.BottomNavigationBar
-
-// Data class for Transaction
-data class Transaction(
-    val type: TransactionType,
-    val color: Color,
-    val title: String,
-    val subtitle: String,
-    val amount: String,
-    val date: String
-)
+import com.fallen.spenwise.model.Transaction
+import com.fallen.spenwise.model.TransactionType
 
 @Composable
 fun DashboardScreen(
     onBudgetClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
-    onAddTransaction: () -> Unit = {}
+    onAddTransaction: () -> Unit = {},
+    onNavigateToTransactions: () -> Unit = {}
 ) {
     val currentUser = FirebaseAuth.getInstance().currentUser
     val userName = currentUser?.displayName ?: "User"
@@ -405,24 +398,17 @@ fun DashboardScreen(
                     ) {
                         Text(
                             text = "Recent Transactions",
-                            fontSize = 20.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
-                        Surface(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { /* TODO: Navigate to transactions */ },
-                            color = Color(0xFF8D5CF5).copy(alpha = 0.2f)
-                        ) {
-                            Text(
-                                text = "See All",
-                                fontSize = 14.sp,
-                                color = Color(0xFF8D5CF5),
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                        Text(
+                            text = "See All",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF8D5CF5),
+                            modifier = Modifier.clickable { onNavigateToTransactions() }
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -441,10 +427,10 @@ fun DashboardScreen(
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             BottomNavigationBar(
-                selectedTab = selectedTab,
-                onTabSelected = { newTab ->
-                    selectedTab = newTab
-                    when (newTab) {
+                selectedTab = 0,
+                onTabSelected = { tabIndex ->
+                    when (tabIndex) {
+                        1 -> onNavigateToTransactions()
                         2 -> onBudgetClick()
                         3 -> onSettingsClick()
                     }
@@ -550,6 +536,24 @@ private fun TransactionItem(transaction: Transaction) {
                         tint = transaction.color,
                         modifier = Modifier.size(22.dp)
                     )
+                    TransactionType.EXPENSE -> Icon(
+                        painter = painterResource(id = R.drawable.ic_others),
+                        contentDescription = "Expense",
+                        tint = transaction.color,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    TransactionType.BILLS -> Icon(
+                        painter = painterResource(id = R.drawable.ic_bills),
+                        contentDescription = "Bills",
+                        tint = transaction.color,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    TransactionType.OTHERS -> Icon(
+                        painter = painterResource(id = R.drawable.ic_others),
+                        contentDescription = "Others",
+                        tint = transaction.color,
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
             }
             
@@ -642,14 +646,35 @@ private fun formatCurrency(amount: Double): String {
     return NumberFormat.getCurrencyInstance(Locale.US).format(amount)
 }
 
+private fun getIconForType(type: TransactionType): Int {
+    return when (type) {
+        TransactionType.FOOD -> R.drawable.ic_food
+        TransactionType.SHOPPING -> R.drawable.ic_shopping
+        TransactionType.TRANSPORT -> R.drawable.ic_others
+        TransactionType.ENTERTAINMENT -> R.drawable.ic_entertainment
+        TransactionType.INCOME -> R.drawable.ic_wallet
+        TransactionType.EXPENSE -> R.drawable.ic_others
+        TransactionType.BILLS -> R.drawable.ic_bills
+        TransactionType.OTHERS -> R.drawable.ic_others
+    }
+}
+
 private fun getSampleTransactions(): List<Transaction> {
     return listOf(
         Transaction(
             type = TransactionType.FOOD,
             color = Color(0xFF8D5CF5),
             title = "Restaurant",
-            subtitle = "Lunch with colleagues",
-            amount = "-$45.50",
+            subtitle = "Food & Dining",
+            amount = "-$25.00",
+            date = "Today"
+        ),
+        Transaction(
+            type = TransactionType.INCOME,
+            color = Color(0xFF4CAF50),
+            title = "Salary Deposit",
+            subtitle = "Income",
+            amount = "+$3,500.00",
             date = "Today"
         ),
         Transaction(
@@ -675,23 +700,6 @@ private fun getSampleTransactions(): List<Transaction> {
             subtitle = "Cinema tickets",
             amount = "-$35.00",
             date = "23 Mar"
-        ),
-        Transaction(
-            type = TransactionType.INCOME,
-            color = Color(0xFF4CAF50),
-            title = "Salary",
-            subtitle = "Monthly payment",
-            amount = "+$4,500.00",
-            date = "22 Mar"
         )
     )
-}
-
-// Add TransactionType enum
-enum class TransactionType {
-    FOOD,
-    SHOPPING,
-    TRANSPORT,
-    ENTERTAINMENT,
-    INCOME
 } 

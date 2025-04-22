@@ -189,7 +189,7 @@ private fun getSampleTransactions(): List<Transaction> {
             color = Color(0xFF8D5CF5),
             title = "Restaurant",
             subtitle = "Lunch with colleagues",
-            amount = "-$45.50",
+            amount = "-₹45.50",
             date = "Today"
         ),
         Transaction(
@@ -197,7 +197,7 @@ private fun getSampleTransactions(): List<Transaction> {
             color = Color(0xFFB06AB3),
             title = "Shopping",
             subtitle = "Grocery store",
-            amount = "-$125.30",
+            amount = "-₹125.30",
             date = "Yesterday"
         ),
         Transaction(
@@ -205,7 +205,7 @@ private fun getSampleTransactions(): List<Transaction> {
             color = Color(0xFFE96D71),
             title = "Transport",
             subtitle = "Uber ride",
-            amount = "-$22.15",
+            amount = "-₹22.15",
             date = "Yesterday"
         ),
         Transaction(
@@ -213,7 +213,7 @@ private fun getSampleTransactions(): List<Transaction> {
             color = Color(0xFF8D5CF5),
             title = "Entertainment",
             subtitle = "Cinema tickets",
-            amount = "-$35.00",
+            amount = "-₹35.00",
             date = "Last Week"
         ),
         Transaction(
@@ -221,7 +221,7 @@ private fun getSampleTransactions(): List<Transaction> {
             color = Color(0xFF4CAF50),
             title = "Salary",
             subtitle = "Monthly payment",
-            amount = "+$4,500.00",
+            amount = "+₹4,500.00",
             date = "Last Week"
         )
     )

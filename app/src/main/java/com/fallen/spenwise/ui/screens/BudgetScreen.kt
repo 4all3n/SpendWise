@@ -30,7 +30,8 @@ import com.fallen.spenwise.ui.components.BottomNavigationBar
 
 @Composable
 fun BudgetScreen(
-    onNavigate: (Int) -> Unit = {}
+    onNavigate: (Int) -> Unit = {},
+    onNavigateToAddBudget: () -> Unit = {}
 ) {
     var selectedMonth by remember { mutableStateOf("March 2025") }
     var selectedTab by remember { mutableStateOf(2) }
@@ -183,7 +184,7 @@ fun BudgetScreen(
                                 color = Color.White.copy(alpha = 0.7f)
                             )
                             Text(
-                                text = "$2,700",
+                                text = "₹2,700",
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
@@ -205,12 +206,12 @@ fun BudgetScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = "Spent: $1,755",
+                                    text = "Spent: ₹1,755",
                                     fontSize = 14.sp,
                                     color = Color.White.copy(alpha = 0.7f)
                                 )
                                 Text(
-                                    text = "Remaining: $945",
+                                    text = "Remaining: ₹945",
                                     fontSize = 14.sp,
                                     color = Color(0xFF10B981)
                                 )
@@ -220,7 +221,7 @@ fun BudgetScreen(
 
                     // Add Category Button
                     Button(
-                        onClick = { /* Add category */ },
+                        onClick = { onNavigateToAddBudget() },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 24.dp)
@@ -232,12 +233,12 @@ fun BudgetScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Add Category",
+                            contentDescription = "Add Budget",
                             tint = Color.White
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Add New Category",
+                            text = "Add Budget",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White
@@ -350,13 +351,13 @@ private fun CategoryCard(
                     horizontalAlignment = Alignment.End
                 ) {
                     Text(
-                        text = "$${category.spent.toInt()}",
+                        text = "₹${category.spent.toInt()}",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
                     )
                     Text(
-                        text = "of $${category.budget.toInt()}",
+                        text = "of ₹${category.budget.toInt()}",
                         fontSize = 14.sp,
                         color = Color.White.copy(alpha = 0.7f)
                     )

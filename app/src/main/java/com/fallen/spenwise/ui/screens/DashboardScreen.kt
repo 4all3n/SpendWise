@@ -205,8 +205,8 @@ fun DashboardScreen(
                                         )
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
-                                            text = "$2,548.00",
-                                            fontSize = 40.sp,
+                                            text = "₹2,548.00",
+                                            fontSize = 32.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color.White
                                         )
@@ -666,7 +666,7 @@ private fun getSampleTransactions(): List<Transaction> {
             color = Color(0xFF8D5CF5),
             title = "Restaurant",
             subtitle = "Food & Dining",
-            amount = "-$25.00",
+            amount = "-₹25.00",
             date = "Today"
         ),
         Transaction(
@@ -674,7 +674,7 @@ private fun getSampleTransactions(): List<Transaction> {
             color = Color(0xFF4CAF50),
             title = "Salary Deposit",
             subtitle = "Income",
-            amount = "+$3,500.00",
+            amount = "+₹3,500.00",
             date = "Today"
         ),
         Transaction(
@@ -682,7 +682,7 @@ private fun getSampleTransactions(): List<Transaction> {
             color = Color(0xFFB06AB3),
             title = "Shopping",
             subtitle = "Grocery store",
-            amount = "-$125.30",
+            amount = "-₹125.30",
             date = "Yesterday"
         ),
         Transaction(
@@ -690,7 +690,7 @@ private fun getSampleTransactions(): List<Transaction> {
             color = Color(0xFFE96D71),
             title = "Transport",
             subtitle = "Uber ride",
-            amount = "-$22.15",
+            amount = "-₹22.15",
             date = "Yesterday"
         ),
         Transaction(
@@ -698,7 +698,7 @@ private fun getSampleTransactions(): List<Transaction> {
             color = Color(0xFF8D5CF5),
             title = "Entertainment",
             subtitle = "Cinema tickets",
-            amount = "-$35.00",
+            amount = "-₹35.00",
             date = "23 Mar"
         )
     )

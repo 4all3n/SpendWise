@@ -264,11 +264,10 @@ fun AddTransactionScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     leadingIcon = {
                         Text(
-                            text = "$",
+                            text = "₹",
+                            fontSize = 24.sp,
                             color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(start = 16.dp)
+                            modifier = Modifier.padding(end = 8.dp)
                         )
                     },
                     shape = RoundedCornerShape(16.dp)

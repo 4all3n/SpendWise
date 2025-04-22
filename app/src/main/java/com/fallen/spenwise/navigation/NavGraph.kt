@@ -80,6 +80,21 @@ fun NavGraph(
                             popUpTo(Screen.Settings.route) { inclusive = true }
                         }
                     }
+                },
+                onNavigateToAddBudget = {
+                    navController.navigate(Screen.AddBudget.route)
+                }
+            )
+        }
+
+        composable(route = Screen.AddBudget.route) {
+            AddBudgetScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onSaveBudget = { category, startDate, endDate, limit ->
+                    // TODO: Handle saving budget
+                    navController.popBackStack()
                 }
             )
         }

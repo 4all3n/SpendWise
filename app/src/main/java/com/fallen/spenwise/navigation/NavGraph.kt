@@ -156,6 +156,11 @@ fun NavGraph(
                 onSaveTransaction = { type, title, amount, category, date, note ->
                     // TODO: Handle saving transaction
                     navController.popBackStack()
+                },
+                onNavigateToDashboard = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.Dashboard.route) { inclusive = true }
+                    }
                 }
             )
         }

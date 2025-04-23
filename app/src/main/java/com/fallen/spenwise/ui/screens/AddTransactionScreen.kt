@@ -28,19 +28,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fallen.spenwise.R
-import com.fallen.spenwise.model.TransactionType
-import java.text.SimpleDateFormat
-import java.util.*
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.material.ripple.rememberRipple
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.IconButton
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.DpOffset
@@ -66,18 +53,23 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import com.fallen.spenwise.data.DatabaseHelper
+import com.google.firebase.auth.FirebaseAuth
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionScreen(
     onNavigateBack: () -> Unit,  // Callback for navigating back
-    onSaveTransaction: (String, String, Double, String, Date, String?) -> Unit  // Callback for saving transaction
+    onSaveTransaction: (String, String, Double, String, Date, String?) -> Unit,  // Callback for saving transaction
+    onNavigateToDashboard: () -> Unit  // New callback for navigating to dashboard
 ) {
     // State variables for form fields
     var selectedTab by remember { mutableStateOf(0) }  // 0 for Expense, 1 for Income
     var title by remember { mutableStateOf("") }  // Transaction title
     var amount by remember { mutableStateOf("") }  // Transaction amount
-    var selectedCategory by remember { mutableStateOf("") }  // Selected category
+    var selectedCategory by remember { mutableStateOf("Food & Dining") }  // Selected category
     var selectedDate by remember { mutableStateOf(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())) }  // Current date as default
     var note by remember { mutableStateOf("") }  // Optional note
     var isExpanded by remember { mutableStateOf(false) }  // State for category dropdown
@@ -100,7 +92,7 @@ fun AddTransactionScreen(
     LaunchedEffect(selectedTab) {
         title = ""
         amount = ""
-        selectedCategory = ""
+        selectedCategory = "Food & Dining"
         note = ""
         selectedDate = dateFormatter.format(Date())
     }
@@ -109,11 +101,11 @@ fun AddTransactionScreen(
     val categories = remember(selectedTab) {
         when (selectedTab) {
             0 -> listOf( // Expense categories with their icons
-                "Food" to R.drawable.ic_food,
+                "Food & Dining" to R.drawable.ic_food,
                 "Shopping" to R.drawable.ic_shopping,
                 "Bills" to R.drawable.ic_bills,
                 "Entertainment" to R.drawable.ic_entertainment,
-                "Transport" to R.drawable.ic_travel,
+                "Travel" to R.drawable.ic_travel,
                 "Others" to R.drawable.ic_others
             )
             else -> listOf( // Income categories with their icons
@@ -618,6 +610,9 @@ fun AddTransactionScreen(
                                         "Transaction saved successfully",
                                         Toast.LENGTH_SHORT
                                     ).show()
+                                    
+                                    // Navigate to dashboard after successful save
+                                    onNavigateToDashboard()
                                 } else {
                                     // Show error message
                                     Toast.makeText(

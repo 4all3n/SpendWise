@@ -245,6 +245,76 @@ class DatabaseHelper(private val appContext: Context) : SQLiteOpenHelper(appCont
         return incomeList
     }
 
+    // Delete expense by ID
+    fun deleteExpense(expenseId: Int): Boolean {
+        val db = this.writableDatabase
+        // First get the expense details to update user's total
+        val cursor = db.query(
+            TABLE_EXPENSES,
+            arrayOf(COLUMN_UID, COLUMN_AMOUNT),
+            "$COLUMN_ID = ?",
+            arrayOf(expenseId.toString()),
+            null,
+            null,
+            null
+        )
+
+        if (cursor.moveToFirst()) {
+            val uid = cursor.getString(cursor.getColumnIndex(COLUMN_UID))
+            val amount = cursor.getDouble(cursor.getColumnIndex(COLUMN_AMOUNT))
+            
+            // Update user's total (increase by expense amount since we're deleting it)
+            val user = getUser(uid)
+            if (user != null) {
+                val currentTotal = user[COLUMN_TOTAL] as Double
+                updateUserTotal(uid, currentTotal + amount)
+            }
+            
+            cursor.close()
+            
+            // Delete the expense
+            val result = db.delete(TABLE_EXPENSES, "$COLUMN_ID = ?", arrayOf(expenseId.toString()))
+            return result > 0
+        }
+        cursor.close()
+        return false
+    }
+
+    // Delete income by ID
+    fun deleteIncome(incomeId: Int): Boolean {
+        val db = this.writableDatabase
+        // First get the income details to update user's total
+        val cursor = db.query(
+            TABLE_INCOME,
+            arrayOf(COLUMN_UID, COLUMN_AMOUNT),
+            "$COLUMN_ID = ?",
+            arrayOf(incomeId.toString()),
+            null,
+            null,
+            null
+        )
+
+        if (cursor.moveToFirst()) {
+            val uid = cursor.getString(cursor.getColumnIndex(COLUMN_UID))
+            val amount = cursor.getDouble(cursor.getColumnIndex(COLUMN_AMOUNT))
+            
+            // Update user's total (decrease by income amount since we're deleting it)
+            val user = getUser(uid)
+            if (user != null) {
+                val currentTotal = user[COLUMN_TOTAL] as Double
+                updateUserTotal(uid, currentTotal - amount)
+            }
+            
+            cursor.close()
+            
+            // Delete the income
+            val result = db.delete(TABLE_INCOME, "$COLUMN_ID = ?", arrayOf(incomeId.toString()))
+            return result > 0
+        }
+        cursor.close()
+        return false
+    }
+
     // Budget operations
     fun addBudget(uid: String, category: String, limit: Double, startDate: String, endDate: String): Long {
         val db = this.writableDatabase

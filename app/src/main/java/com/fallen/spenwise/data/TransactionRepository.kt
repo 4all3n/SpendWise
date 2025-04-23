@@ -92,4 +92,13 @@ class TransactionRepository(context: Context) {
             transactionDate in startDateString..endDateString
         }
     }
+
+    // Delete a transaction
+    fun deleteTransaction(transactionId: Int, isExpense: Boolean): Boolean {
+        return if (isExpense) {
+            dbHelper.deleteExpense(transactionId)
+        } else {
+            dbHelper.deleteIncome(transactionId)
+        }
+    }
 } 

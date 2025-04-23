@@ -45,6 +45,10 @@ fun TransactionScreen(
     // State for transactions
     var transactions by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     
+    // State for delete confirmation dialog
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var transactionToDelete by remember { mutableStateOf<Map<String, Any>?>(null) }
+    
     // Load transactions when screen is created or when currentUserId changes
     LaunchedEffect(currentUserId) {
         if (currentUserId != null) {
@@ -60,6 +64,51 @@ fun TransactionScreen(
                 it[DatabaseHelper.COLUMN_ID] as Int 
             }
         }
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog && transactionToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { 
+                showDeleteDialog = false
+                transactionToDelete = null
+            },
+            title = { Text("Delete Transaction") },
+            text = { Text("Are you sure you want to delete this transaction?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // Delete the transaction
+                        transactionRepository.deleteTransaction(
+                            transactionToDelete!![DatabaseHelper.COLUMN_ID] as Int,
+                            transactionToDelete!!["isExpense"] as Boolean
+                        )
+                        // Refresh transactions
+                        if (currentUserId != null) {
+                            val expenses = transactionRepository.getExpenses(currentUserId)
+                            val income = transactionRepository.getIncome(currentUserId)
+                            transactions = (expenses.map { it + ("isExpense" to true) } +
+                                         income.map { it + ("isExpense" to false) })
+                                    .sortedByDescending { it[DatabaseHelper.COLUMN_ID] as Int }
+                        }
+                        showDeleteDialog = false
+                        transactionToDelete = null
+                    }
+                ) {
+                    Text("Delete", color = Color(0xFFE57373))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { 
+                        showDeleteDialog = false
+                        transactionToDelete = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -154,7 +203,12 @@ fun TransactionScreen(
                                     category = transaction[DatabaseHelper.COLUMN_CATEGORY] as String,
                                     date = transaction[DatabaseHelper.COLUMN_DATE] as String,
                                     note = transaction[DatabaseHelper.COLUMN_NOTE] as? String,
-                                    isExpense = transaction["isExpense"] as Boolean
+                                    isExpense = transaction["isExpense"] as Boolean,
+                                    transactionId = transaction[DatabaseHelper.COLUMN_ID] as Int,
+                                    onDelete = {
+                                        transactionToDelete = transaction
+                                        showDeleteDialog = true
+                                    }
                                 )
                             }
                         }
@@ -172,7 +226,9 @@ private fun TransactionItem(
     category: String,
     date: String,
     note: String?,
-    isExpense: Boolean
+    isExpense: Boolean,
+    transactionId: Int,
+    onDelete: () -> Unit
 ) {
     Surface(
         modifier = Modifier
@@ -224,13 +280,30 @@ private fun TransactionItem(
                 }
             }
 
-            // Amount with proper sign and color
-            Text(
-                text = "${if (isExpense) "-" else "+"}₹${String.format("%.2f", amount)}",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (isExpense) Color(0xFFE57373) else Color(0xFF81C784)
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Amount with proper sign and color
+                Text(
+                    text = "${if (isExpense) "-" else "+"}₹${String.format("%.2f", amount)}",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isExpense) Color(0xFFE57373) else Color(0xFF81C784)
+                )
+
+                // Delete button
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_delete),
+                        contentDescription = "Delete Transaction",
+                        tint = Color(0xFFE57373)
+                    )
+                }
+            }
         }
     }
 }

@@ -1,19 +1,23 @@
 package com.fallen.spenwise.ui.screens
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fallen.spenwise.R
@@ -21,7 +25,11 @@ import com.fallen.spenwise.data.TransactionRepository
 import com.fallen.spenwise.data.DatabaseHelper
 import com.google.firebase.auth.FirebaseAuth
 import android.widget.Toast
-import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,10 +39,11 @@ fun EditTransactionScreen(
     transactionId: Int,
     isExpense: Boolean,
     onNavigateBack: () -> Unit,
-    context: android.content.Context
+    context: Context
 ) {
     val transactionRepository = remember { TransactionRepository(context) }
     val currentUser = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "current_user" }
+    val scrollState = rememberScrollState()
     
     // State variables
     var title by remember { mutableStateOf("") }
@@ -43,6 +52,7 @@ fun EditTransactionScreen(
     var note by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var isExpanded by remember { mutableStateOf(false) }
     
     // Load transaction details
     LaunchedEffect(transactionId) {
@@ -54,7 +64,7 @@ fun EditTransactionScreen(
         
         transaction?.let {
             title = it[DatabaseHelper.COLUMN_TITLE] as String
-            amount = (it[DatabaseHelper.COLUMN_AMOUNT] as Double).toString()
+            amount = (it[DatabaseHelper.COLUMN_AMOUNT] as Double).toInt().toString()
             category = it[DatabaseHelper.COLUMN_CATEGORY] as String
             note = it[DatabaseHelper.COLUMN_NOTE] as? String ?: ""
             date = it[DatabaseHelper.COLUMN_DATE] as String
@@ -104,6 +114,7 @@ fun EditTransactionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(horizontal = 24.dp)
                 .windowInsetsPadding(WindowInsets.systemBars)
         ) {
@@ -177,6 +188,147 @@ fun EditTransactionScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Current Values Section
+            Text(
+                text = "Current Values",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFF282C35),
+                shape = RoundedCornerShape(24.dp),
+                tonalElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                ) {
+                    // Amount (now at the top for emphasis)
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Amount",
+                            fontSize = 18.sp,
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "₹${(amount.toDoubleOrNull() ?: 0.0).toInt()}",
+                            fontSize = 16.sp,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Title and Category in a row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        // Title
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "Title",
+                                fontSize = 18.sp,
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = title,
+                                fontSize = 16.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        // Category
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "Category",
+                                fontSize = 18.sp,
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = category,
+                                fontSize = 16.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Date
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Date",
+                            fontSize = 18.sp,
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = date,
+                            fontSize = 16.sp,
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    if (!note.isNullOrEmpty()) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Note",
+                                fontSize = 18.sp,
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = note,
+                                fontSize = 16.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Edit Section
+            Text(
+                text = "Edit Values",
+                fontSize = 16.sp,
+                color = Color.White.copy(alpha = 0.7f),
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
             // Title Input
             OutlinedTextField(
                 value = title,
@@ -200,7 +352,7 @@ fun EditTransactionScreen(
             OutlinedTextField(
                 value = amount,
                 onValueChange = { 
-                    if (it.isEmpty() || it.toDoubleOrNull() != null) {
+                    if (it.isEmpty() || it.toIntOrNull() != null) {
                         amount = it
                     }
                 },
@@ -215,27 +367,113 @@ fun EditTransactionScreen(
                     focusedLabelColor = Color.White.copy(alpha = 0.7f),
                     unfocusedLabelColor = Color.White.copy(alpha = 0.7f)
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Category Input
-            OutlinedTextField(
-                value = category,
-                onValueChange = { category = it },
-                label = { Text("Category", color = Color.White.copy(alpha = 0.7f)) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = Color(0xFF8B5CF6),
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedLabelColor = Color.White.copy(alpha = 0.7f),
-                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f)
-                ),
-                shape = RoundedCornerShape(12.dp)
-            )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = category,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Category", color = Color.White.copy(alpha = 0.7f)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { isExpanded = true },
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = Color(0xFF8B5CF6),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedLabelColor = Color.White.copy(alpha = 0.7f),
+                        unfocusedLabelColor = Color.White.copy(alpha = 0.7f)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    trailingIcon = {
+                        IconButton(onClick = { isExpanded = true }) {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Select category",
+                                tint = Color.White.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                )
+
+                // Category Dropdown Menu
+                DropdownMenu(
+                    expanded = isExpanded,
+                    onDismissRequest = { isExpanded = false },
+                    modifier = Modifier
+                        .background(
+                            color = Color(0xFF282C35),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                ) {
+                    val categories = if (isExpense) {
+                        listOf(
+                            "Food & Dining" to R.drawable.ic_food,
+                            "Shopping" to R.drawable.ic_shopping,
+                            "Bills" to R.drawable.ic_bills,
+                            "Entertainment" to R.drawable.ic_entertainment,
+                            "Travel" to R.drawable.ic_travel,
+                            "Others" to R.drawable.ic_others
+                        )
+                    } else {
+                        listOf(
+                            "Salary" to R.drawable.ic_wallet,
+                            "Freelance" to R.drawable.ic_freelance,
+                            "Investment" to R.drawable.ic_investment,
+                            "Others" to R.drawable.ic_dollar
+                        )
+                    }
+
+                    categories.forEach { (cat, icon) ->
+                        DropdownMenuItem(
+                            onClick = {
+                                category = cat
+                                isExpanded = false
+                            },
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(
+                                                if (isExpense) 
+                                                    Color(0xFFEF4444).copy(alpha = 0.2f) 
+                                                else 
+                                                    Color(0xFF10B981).copy(alpha = 0.2f)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = icon),
+                                            contentDescription = null,
+                                            tint = if (isExpense) 
+                                                Color(0xFFEF4444) 
+                                            else 
+                                                Color(0xFF10B981),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = cat,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -261,13 +499,13 @@ fun EditTransactionScreen(
             // Save Button
             Button(
                 onClick = {
-                    val newAmount = amount.toDoubleOrNull()
+                    val newAmount = amount.toIntOrNull()
                     if (newAmount != null && newAmount > 0 && title.isNotEmpty() && category.isNotEmpty()) {
                         if (isExpense) {
                             if (transactionRepository.updateExpense(
                                     transactionId,
                                     title,
-                                    newAmount,
+                                    newAmount.toDouble(),
                                     category,
                                     date,
                                     note
@@ -281,7 +519,7 @@ fun EditTransactionScreen(
                             if (transactionRepository.updateIncome(
                                     transactionId,
                                     title,
-                                    newAmount,
+                                    newAmount.toDouble(),
                                     category,
                                     date,
                                     note
@@ -363,5 +601,19 @@ fun EditTransactionScreen(
                 }
             }
         )
+    }
+}
+
+private fun getIconForCategory(category: String): Int {
+    return when (category.lowercase()) {
+        "food & dining" -> R.drawable.ic_food
+        "shopping" -> R.drawable.ic_shopping
+        "bills" -> R.drawable.ic_bills
+        "entertainment" -> R.drawable.ic_entertainment
+        "travel" -> R.drawable.ic_travel
+        "salary" -> R.drawable.ic_wallet
+        "freelance" -> R.drawable.ic_freelance
+        "investment" -> R.drawable.ic_investment
+        else -> R.drawable.ic_others
     }
 } 

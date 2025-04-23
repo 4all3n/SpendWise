@@ -23,13 +23,15 @@ class TransactionRepository(context: Context) {
     // Add a new expense
     fun addExpense(uid: String, title: String, amount: Double, category: String, date: Date, note: String?): Long {
         val dateString = dateFormatter.format(date)
-        return dbHelper.addExpense(uid, title, amount, category, dateString, note)
+        val timestamp = System.currentTimeMillis()
+        return dbHelper.addExpense(uid, title, amount, category, dateString, note, timestamp)
     }
 
     // Add a new income
     fun addIncome(uid: String, title: String, amount: Double, category: String, date: Date, note: String?): Long {
         val dateString = dateFormatter.format(date)
-        return dbHelper.addIncome(uid, title, amount, category, dateString, note)
+        val timestamp = System.currentTimeMillis()
+        return dbHelper.addIncome(uid, title, amount, category, dateString, note, timestamp)
     }
 
     // Get all expenses for a user

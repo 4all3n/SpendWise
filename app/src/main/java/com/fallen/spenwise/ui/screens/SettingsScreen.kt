@@ -1,5 +1,7 @@
 package com.fallen.spenwise.ui.screens
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,258 +21,101 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.fallen.spenwise.R
 import com.fallen.spenwise.ui.components.BottomNavigationBar
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import com.fallen.spenwise.utils.PreferenceManager
+import androidx.navigation.NavController
+import com.fallen.spenwise.data.UserRepository
+import com.fallen.spenwise.data.DatabaseHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onNavigateBack: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF1B1E27),
-                        Color(0xFF232731)
-                    )
-                )
-            )
-    ) {
-        // Decorative Background Elements
-        Box(
-            modifier = Modifier
-                .size(300.dp)
-                .offset(x = (-50).dp, y = (-50).dp)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFF8B5CF6).copy(alpha = 0.2f),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-        Box(
-            modifier = Modifier
-                .size(300.dp)
-                .offset(x = 200.dp, y = 200.dp)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFFB06AB3).copy(alpha = 0.15f),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-        ) {
-            // Top Bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = onNavigateBack,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF2A2F3C))
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
-                    )
-                }
-                Text(
-                    text = "Settings",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                // Placeholder for symmetry
-                Spacer(modifier = Modifier.size(40.dp))
-            }
-
-            // Settings Content
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 20.dp)
-            ) {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Settings Items
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFF2A2F3C),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Account Settings",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SettingsItem(
-                            title = "Profile",
-                            subtitle = "Manage your personal information"
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SettingsItem(
-                            title = "Security",
-                            subtitle = "Password and authentication"
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SettingsItem(
-                            title = "Notifications",
-                            subtitle = "Customize your notifications"
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFF2A2F3C),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "App Settings",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SettingsItem(
-                            title = "Currency",
-                            subtitle = "Set your preferred currency"
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SettingsItem(
-                            title = "Theme",
-                            subtitle = "Customize app appearance"
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SettingsItem(
-                            title = "Language",
-                            subtitle = "Choose your language"
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFF2A2F3C),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "About",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SettingsItem(
-                            title = "Version",
-                            subtitle = "1.0.0"
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SettingsItem(
-                            title = "Terms of Service",
-                            subtitle = "Read our terms and conditions"
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SettingsItem(
-                            title = "Privacy Policy",
-                            subtitle = "Read our privacy policy"
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SettingsItem(
-    title: String,
-    subtitle: String
-) {
-    Column {
-        Text(
-            text = title,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color.White
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = subtitle,
-            fontSize = 14.sp,
-            color = Color.White.copy(alpha = 0.6f)
-        )
-    }
-}
-
-@Composable
-fun SettingsScreen(
-    onNavigate: (Int) -> Unit = {},
+    onNavigateBack: () -> Unit,
+    onNavigateToChangePassword: () -> Unit = {},
+    onNavigateToTransactions: () -> Unit = {},
+    onBudgetClick: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableStateOf(3) }
     var darkMode by remember { mutableStateOf(true) }
     val currentUser = FirebaseAuth.getInstance().currentUser
     val context = LocalContext.current
+    val isEmailPasswordUser = remember {
+        currentUser?.providerData?.any { 
+            it.providerId == EmailAuthProvider.PROVIDER_ID 
+        } ?: false
+    }
+
+    // Check if user is signed in with Google
+    val isGoogleUser = remember {
+        currentUser?.providerData?.any { 
+            it.providerId == GoogleAuthProvider.PROVIDER_ID 
+        } ?: false
+    }
+
+    // Get user's profile photo URL
+    val profilePhotoUrl = remember {
+        if (isGoogleUser) {
+            currentUser?.photoUrl?.toString()
+        } else {
+            null
+        }
+    }
+
+    // State for delete all dialog
+    var showDeleteAllDialog by remember { mutableStateOf(false) }
+
+    val userRepository = remember { UserRepository(context) }
+    val currentUserId = remember { userRepository.getCurrentUserId() }
+    val dbHelper = remember { DatabaseHelper(context) }
 
     // Function to handle complete sign out
     fun handleSignOut() {
+        try {
+            // Clear saved credentials
+            val preferenceManager = PreferenceManager(context)
+            preferenceManager.clearCredentials()
+            preferenceManager.setRememberMe(false)
+
         // Sign out from Firebase
-        FirebaseAuth.getInstance().signOut()
-        
-        // Sign out from Google
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            val auth = FirebaseAuth.getInstance()
+            val currentUser = auth.currentUser
+
+            // If signed in with Google, revoke access
+            if (currentUser?.providerData?.any { it.providerId == GoogleAuthProvider.PROVIDER_ID } == true) {
+                GoogleSignIn.getClient(
+                    context,
+                    GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(context.getString(R.string.default_web_client_id))
             .requestEmail()
             .build()
+                ).revokeAccess()
+            }
             
-        val googleSignInClient = GoogleSignIn.getClient(context, gso)
-        googleSignInClient.signOut()
-        googleSignInClient.revokeAccess()
+            // Sign out from Firebase
+            auth.signOut()
 
         // Navigate to welcome screen
         onSignOut()
+
+            Toast.makeText(context, "Signed out successfully", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(context, "Error signing out: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     Box(
@@ -363,14 +208,35 @@ fun SettingsScreen(
                                         .size(72.dp)
                                         .clip(CircleShape)
                                         .background(
+                                            if (profilePhotoUrl == null)
                                             Brush.linearGradient(
                                                 colors = listOf(
                                                     Color(0xFF8B5CF6),
                                                     Color(0xFFB06AB3)
                                                 )
                                             )
+                                            else
+                                                Brush.linearGradient(
+                                                    colors = listOf(
+                                                        Color.Transparent,
+                                                        Color.Transparent
+                                                    )
+                                                )
                                         )
                                 ) {
+                                    if (profilePhotoUrl != null) {
+                                        AsyncImage(
+                                            model = ImageRequest.Builder(LocalContext.current)
+                                                .data(profilePhotoUrl)
+                                                .crossfade(true)
+                                                .build(),
+                                            contentDescription = "Profile Picture",
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .size(72.dp)
+                                                .clip(CircleShape)
+                                        )
+                                    } else {
                                     Icon(
                                         imageVector = Icons.Default.Person,
                                         contentDescription = "Profile Picture",
@@ -379,9 +245,11 @@ fun SettingsScreen(
                                             .size(40.dp)
                                             .align(Alignment.Center)
                                     )
+                                    }
                                 }
                                 
-                                // Edit Button
+                                // Only show edit button for non-Google users
+                                if (!isGoogleUser) {
                                 Surface(
                                     modifier = Modifier
                                         .size(28.dp)
@@ -399,6 +267,7 @@ fun SettingsScreen(
                                         modifier = Modifier
                                             .padding(6.dp)
                                     )
+                                    }
                                 }
                             }
 
@@ -450,19 +319,70 @@ fun SettingsScreen(
                     // Security Section
                     Text(
                         text = "Security",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(vertical = 16.dp)
                     )
 
-                    SettingsCard(
-                        title = "Change Password",
-                        showArrow = true,
-                        onClick = { /* Handle password change */ }
-                    )
-
-                    Spacer(modifier = Modifier.height(32.dp))
+                    // Change Password Option (always visible but conditionally enabled)
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (isEmailPasswordUser) {
+                                    onNavigateToChangePassword()
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Password change is not available for Google Sign-In users",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            },
+                        color = Color(0xFF282C35),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Color(0xFF8B5CF6).copy(alpha = if (isEmailPasswordUser) 0.2f else 0.1f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_lock),
+                                        contentDescription = null,
+                                        tint = Color(0xFF8B5CF6).copy(alpha = if (isEmailPasswordUser) 1f else 0.5f),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(
+                                    text = "Change Password",
+                                    fontSize = 16.sp,
+                                    color = if (isEmailPasswordUser) Color.White else Color.White.copy(alpha = 0.5f)
+                                )
+                            }
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_chevron_right),
+                                contentDescription = null,
+                                tint = Color.White.copy(alpha = if (isEmailPasswordUser) 0.5f else 0.3f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Preferences Section
                     Text(
@@ -472,6 +392,56 @@ fun SettingsScreen(
                         color = Color.White,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
+
+                    // Delete All Data Option
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showDeleteAllDialog = true },
+                        color = Color(0xFF282C35),
+                        shape = RoundedCornerShape(16.dp),
+                        tonalElevation = 4.dp
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Color(0xFFEF4444).copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_delete),
+                                        contentDescription = "Delete All",
+                                        tint = Color(0xFFEF4444),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(
+                                    text = "Delete All Data",
+                                    fontSize = 16.sp,
+                                    color = Color.White
+                                )
+                            }
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_chevron_right),
+                                contentDescription = "Delete All",
+                                tint = Color.White.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Dark Mode Toggle
                     Surface(
@@ -533,18 +503,78 @@ fun SettingsScreen(
 
         // Bottom Navigation Bar
         Box(
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier
+                .align(Alignment.BottomCenter)  // Match the background color
         ) {
             BottomNavigationBar(
                 selectedTab = selectedTab,
                 onTabSelected = { newTab ->
                     if (newTab != selectedTab) {
                         selectedTab = newTab
-                        onNavigate(newTab)
+                        when (newTab) {
+                            0 -> onNavigateBack()  // Dashboard
+                            1 -> onNavigateToTransactions()  // Transactions
+                            2 -> onBudgetClick()
+                            // 3 is Settings, already here
+                        }
                     }
                 }
             )
         }
+    }
+
+    // Delete All Dialog
+    if (showDeleteAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAllDialog = false },
+            title = { Text("Delete All Data") },
+            text = { Text("Are you sure you want to delete all your transactions and budgets? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (currentUserId != null) {
+                            val success = dbHelper.deleteAllUserData(currentUserId)
+                            if (success) {
+                                Toast.makeText(context, "All data deleted successfully", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Failed to delete data", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        showDeleteAllDialog = false
+                    }
+                ) {
+                    Text("Delete All", color = Color(0xFFEF4444))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteAllDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun SettingsItem(
+    title: String,
+    subtitle: String
+) {
+    Column {
+        Text(
+            text = title,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.White
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = subtitle,
+            fontSize = 14.sp,
+            color = Color.White.copy(alpha = 0.6f)
+        )
     }
 }
 

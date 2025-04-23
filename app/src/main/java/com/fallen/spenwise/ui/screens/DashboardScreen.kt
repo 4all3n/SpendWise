@@ -43,6 +43,10 @@ import com.fallen.spenwise.data.DatabaseHelper
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.google.firebase.auth.GoogleAuthProvider
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -73,18 +77,33 @@ fun DashboardScreen(
     // State for delete dialog
     var showDeleteDialog by remember { mutableStateOf(false) }
     var transactionToDelete by remember { mutableStateOf<Map<String, Any>?>(null) }
+
+    // Check if user is signed in with Google and get profile photo URL
+    val isGoogleUser = remember {
+        currentUser?.providerData?.any { 
+            it.providerId == GoogleAuthProvider.PROVIDER_ID 
+        } ?: false
+    }
     
-    // Load data when screen is created or when currentUserId changes
-    LaunchedEffect(currentUserId) {
+    val profilePhotoUrl = remember {
+        if (isGoogleUser) {
+            currentUser?.photoUrl?.toString()
+        } else {
+            null
+        }
+    }
+
+    // Function to update totals
+    fun updateTotals() {
         if (currentUserId != null) {
             // Get transactions
             val expenses = transactionRepository.getExpenses(currentUserId)
             val income = transactionRepository.getIncome(currentUserId)
             
-            // Combine and sort transactions
+            // Combine and sort transactions by timestamp
             val allTransactions = (expenses.map { it + ("isExpense" to true) } +
                                 income.map { it + ("isExpense" to false) })
-                .sortedByDescending { it[DatabaseHelper.COLUMN_ID] as Int }
+                .sortedByDescending { it[DatabaseHelper.COLUMN_TIMESTAMP] as Long }
             
             // Calculate totals
             totalIncome = income.sumOf { it[DatabaseHelper.COLUMN_AMOUNT] as Double }
@@ -97,6 +116,19 @@ fun DashboardScreen(
                 }
             
             transactions = allTransactions
+        }
+    }
+    
+    // Load data when screen is created or when currentUserId changes
+    LaunchedEffect(currentUserId) {
+        updateTotals()
+    }
+
+    // Update totals periodically
+    LaunchedEffect(Unit) {
+        while (true) {
+            updateTotals()
+            kotlinx.coroutines.delay(5000) // Update every 5 seconds
         }
     }
 
@@ -198,21 +230,44 @@ fun DashboardScreen(
                                 .size(48.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    brush = Brush.linearGradient(
+                                    if (profilePhotoUrl == null)
+                                        Brush.linearGradient(
                                         colors = listOf(
                                             Color(0xFF8D5CF5),
                                             Color(0xFFB06AB3)
                                         )
                                     )
-                                ),
+                                    else
+                                        Brush.linearGradient(
+                                            colors = listOf(
+                                                Color.Transparent,
+                                                Color.Transparent
+                                            )
+                                        )
+                                )
+                                .clickable { onSettingsClick() },
                             contentAlignment = Alignment.Center
                         ) {
+                            if (profilePhotoUrl != null) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(profilePhotoUrl)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = "Profile",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                )
+                            } else {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_person),
                                 contentDescription = "Profile",
                                 tint = Color.White,
                                 modifier = Modifier.size(24.dp)
                             )
+                            }
                         }
                     }
 
@@ -265,12 +320,13 @@ fun DashboardScreen(
                                         modifier = Modifier
                                             .size(48.dp)
                                             .clip(RoundedCornerShape(12.dp))
-                                            .background(Color.White.copy(alpha = 0.2f)),
+                                            .background(Color.White.copy(alpha = 0.2f))
+                                            .clickable { onBudgetClick() },
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_wallet),
-                                            contentDescription = "Wallet",
+                                            contentDescription = "Budget",
                                             tint = Color.White,
                                             modifier = Modifier.size(24.dp)
                                         )
@@ -295,13 +351,21 @@ fun DashboardScreen(
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
                                         Icon(
-                                            painter = painterResource(id = R.drawable.ic_trending_up),
-                                            contentDescription = "Trending up",
+                                            painter = painterResource(
+                                                id = if (totalIncome > totalExpenses) 
+                                                    R.drawable.ic_trending_up 
+                                                else 
+                                                    R.drawable.ic_trending_down
+                                            ),
+                                            contentDescription = if (totalIncome > totalExpenses) 
+                                                "Trending up" 
+                                            else 
+                                                "Trending down",
                                             tint = Color.White,
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Text(
-                                            text = "+₹${totalIncome.toInt()}",
+                                            text = "${if (totalIncome > totalExpenses) "+" else "-"}₹${Math.abs(totalIncome - totalExpenses).toInt()}",
                                             fontSize = 14.sp,
                                             color = Color.White,
                                             fontWeight = FontWeight.Medium
@@ -333,13 +397,28 @@ fun DashboardScreen(
                             modifier = Modifier.padding(24.dp),
                             verticalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
-                            categoryTotals.forEach { (category, amount) ->
-                                ExpenseCategoryItem(
-                                    icon = getCategoryIcon(category),
-                                    text = category,
-                                    percentage = "${((amount / totalExpenses) * 100).toInt()}%",
-                                    color = getCategoryColor(category)
-                                )
+                            if (categoryTotals.isEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 32.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No transactions yet",
+                                        fontSize = 16.sp,
+                                        color = Color.White.copy(alpha = 0.7f)
+                                    )
+                                }
+                            } else {
+                                categoryTotals.forEach { (category, amount) ->
+                                    ExpenseCategoryItem(
+                                        icon = getCategoryIcon(category),
+                                        text = category,
+                                        percentage = "${((amount / totalExpenses) * 100).toInt()}%",
+                                        color = getCategoryColor(category)
+                                    )
+                                }
                             }
                         }
                     }
@@ -454,11 +533,11 @@ fun DashboardScreen(
                 Box(
                     modifier = Modifier.padding(horizontal = 24.dp)
                 ) {
-                    TransactionItem(
-                        title = transaction[DatabaseHelper.COLUMN_TITLE] as String,
-                        amount = transaction[DatabaseHelper.COLUMN_AMOUNT] as Double,
-                        category = transaction[DatabaseHelper.COLUMN_CATEGORY] as String,
-                        date = transaction[DatabaseHelper.COLUMN_DATE] as String,
+                TransactionItem(
+                    title = transaction[DatabaseHelper.COLUMN_TITLE] as String,
+                    amount = transaction[DatabaseHelper.COLUMN_AMOUNT] as Double,
+                    category = transaction[DatabaseHelper.COLUMN_CATEGORY] as String,
+                    date = transaction[DatabaseHelper.COLUMN_DATE] as String,
                         note = transaction[DatabaseHelper.COLUMN_NOTE] as? String,
                         isExpense = transaction["isExpense"] as Boolean,
                         transactionId = transaction[DatabaseHelper.COLUMN_ID] as Int,
@@ -472,7 +551,7 @@ fun DashboardScreen(
                                 transaction["isExpense"] as Boolean
                             )
                         }
-                    )
+                )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -496,14 +575,8 @@ fun DashboardScreen(
                             )
                             if (success) {
                                 Toast.makeText(context, "Transaction deleted successfully", Toast.LENGTH_SHORT).show()
-                                // Refresh transactions
-                                if (currentUserId != null) {
-                                    val expenses = transactionRepository.getExpenses(currentUserId)
-                                    val income = transactionRepository.getIncome(currentUserId)
-                                    transactions = (expenses.map { it + ("isExpense" to true) } +
-                                                 income.map { it + ("isExpense" to false) })
-                                            .sortedByDescending { it[DatabaseHelper.COLUMN_ID] as Int }
-                                }
+                                // Update totals immediately after deletion
+                                updateTotals()
                             } else {
                                 Toast.makeText(context, "Failed to delete transaction", Toast.LENGTH_SHORT).show()
                             }
@@ -580,35 +653,35 @@ private fun TransactionItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Category Icon
-                Box(
-                    modifier = Modifier
+            Box(
+                modifier = Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(getCategoryColor(category).copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(id = getCategoryIcon(category)),
-                        contentDescription = category,
-                        tint = getCategoryColor(category),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = getCategoryIcon(category)),
+                    contentDescription = category,
+                    tint = getCategoryColor(category),
                         modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
                 // Transaction Details
                 Column {
-                    Text(
-                        text = title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
                         color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = category,
+                )
+                Text(
+                    text = category,
                         fontSize = 14.sp,
                         color = Color.White.copy(alpha = 0.7f)
                     )
@@ -617,13 +690,13 @@ private fun TransactionItem(
                             text = note,
                             fontSize = 12.sp,
                             color = Color.White.copy(alpha = 0.5f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                     }
                 }
             }
-
+            
             // Amount
             Column(
                 horizontalAlignment = Alignment.End

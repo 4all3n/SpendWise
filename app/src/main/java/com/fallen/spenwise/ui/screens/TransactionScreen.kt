@@ -56,6 +56,8 @@ fun TransactionScreen(
     var transactionToDelete by remember { mutableStateOf<Map<String, Any>?>(null) }
     
     // Load transactions when screen is created or when currentUserId changes
+    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+    
     LaunchedEffect(currentUserId) {
         if (currentUserId != null) {
             val expenses = transactionRepository.getExpenses(currentUserId)
@@ -65,9 +67,9 @@ fun TransactionScreen(
             val allTransactions = (expenses.map { it + ("isExpense" to true) } +
                                 income.map { it + ("isExpense" to false) })
             
-            // Sort transactions by ID in descending order (newest first)
-            transactions = allTransactions.sortedByDescending { 
-                it[DatabaseHelper.COLUMN_ID] as Int 
+            // Sort transactions by timestamp in descending order (newest first)
+            transactions = allTransactions.sortedByDescending { transaction ->
+                transaction[DatabaseHelper.COLUMN_TIMESTAMP] as Long
             }
         }
     }
@@ -89,13 +91,15 @@ fun TransactionScreen(
                             transactionToDelete!![DatabaseHelper.COLUMN_ID] as Int,
                             transactionToDelete!!["isExpense"] as Boolean
                         )
-                        // Refresh transactions
+                        // Refresh transactions with the same sorting
                         if (currentUserId != null) {
                             val expenses = transactionRepository.getExpenses(currentUserId)
                             val income = transactionRepository.getIncome(currentUserId)
                             transactions = (expenses.map { it + ("isExpense" to true) } +
                                          income.map { it + ("isExpense" to false) })
-                                    .sortedByDescending { it[DatabaseHelper.COLUMN_ID] as Int }
+                                    .sortedByDescending { transaction ->
+                                        transaction[DatabaseHelper.COLUMN_TIMESTAMP] as Long
+                                    }
                         }
                         showDeleteDialog = false
                         transactionToDelete = null
@@ -191,18 +195,7 @@ fun TransactionScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 24.dp)
-                    .padding(top = 24.dp)
             ) {
-                // Header
-                Text(
-                    text = "Transactions",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(bottom = 24.dp)
-                )
-
                 if (transactions.isEmpty()) {
                     // Show empty state
                     Box(
@@ -228,6 +221,19 @@ fun TransactionScreen(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        // Header
+                        item {
+                            Text(
+                                text = "Transactions",
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier
+                                    .padding(horizontal = 24.dp)
+                                    .padding(top = 24.dp, bottom = 24.dp)
+                            )
+                        }
+
                         groupedTransactions.forEach { (date, dateTransactions) ->
                             item {
                                 Text(
@@ -235,11 +241,16 @@ fun TransactionScreen(
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = Color.White.copy(alpha = 0.7f),
-                                    modifier = Modifier.padding(vertical = 8.dp)
+                                    modifier = Modifier
+                                        .padding(horizontal = 24.dp)
+                                        .padding(vertical = 8.dp)
                                 )
                             }
 
                             items(dateTransactions) { transaction ->
+                                Box(
+                                    modifier = Modifier.padding(horizontal = 24.dp)
+                                ) {
                                 TransactionItem(
                                     title = transaction[DatabaseHelper.COLUMN_TITLE] as String,
                                     amount = transaction[DatabaseHelper.COLUMN_AMOUNT] as Double,
@@ -251,14 +262,15 @@ fun TransactionScreen(
                                     onDelete = {
                                         transactionToDelete = transaction
                                         showDeleteDialog = true
-                                    },
-                                    onEdit = {
-                                        onNavigateToEditTransaction(
-                                            transaction[DatabaseHelper.COLUMN_ID] as Int,
-                                            transaction["isExpense"] as Boolean
-                                        )
+                                        },
+                                        onEdit = {
+                                            onNavigateToEditTransaction(
+                                                transaction[DatabaseHelper.COLUMN_ID] as Int,
+                                                transaction["isExpense"] as Boolean
+                                            )
                                     }
                                 )
+                                }
                             }
                         }
                     }
@@ -300,63 +312,63 @@ private fun TransactionItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Category Icon
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(getColorForCategory(category).copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        painter = painterResource(id = getIconForCategory(category)),
-                        contentDescription = category,
-                        tint = getColorForCategory(category),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                // Category Icon
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(getColorForCategory(category).copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = getIconForCategory(category)),
+                            contentDescription = category,
+                            tint = getColorForCategory(category),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
 
                 Spacer(modifier = Modifier.width(16.dp))
 
                 // Transaction Details
-                Column {
-                    Text(
-                        text = title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = category,
-                        fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
-                    if (!note.isNullOrEmpty()) {
+                    Column {
                         Text(
-                            text = note,
-                            fontSize = 12.sp,
-                            color = Color.White.copy(alpha = 0.5f),
+                            text = title,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+                            Text(
+                                text = category,
+                                fontSize = 14.sp,
+                                color = Color.White.copy(alpha = 0.7f)
+                            )
+                            if (!note.isNullOrEmpty()) {
+                                Text(
+                                    text = note,
+                            fontSize = 12.sp,
+                            color = Color.White.copy(alpha = 0.5f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                     }
                 }
-            }
 
             // Amount
             Column(
                 horizontalAlignment = Alignment.End
-            ) {
-                Text(
-                    text = "${if (isExpense) "-" else "+"}₹${amount.toInt()}",
+                ) {
+                    Text(
+                        text = "${if (isExpense) "-" else "+"}₹${amount.toInt()}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (isExpense) Color(0xFFEF4444) else Color(0xFF10B981)
-                )
+                    )
                 Text(
                     text = date,
                     fontSize = 12.sp,

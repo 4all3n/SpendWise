@@ -11,21 +11,22 @@ import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-
+import androidx.navigation.NavOptions
 import androidx.navigation.NavType
 import com.fallen.spenwise.ui.screens.*
 import com.google.firebase.auth.FirebaseAuth
 import com.fallen.spenwise.data.BudgetRepository
 import androidx.compose.ui.platform.LocalContext
+import com.fallen.spenwise.navigation.Screen
 
 @Composable
-fun NavGraph(
+fun SetupNavGraph(
     navController: NavHostController,
-    initialDestination: String = Screen.Welcome.route
+    startDestination: String
 ) {
     NavHost(
         navController = navController,
-        startDestination = initialDestination
+        startDestination = startDestination
     ) {
         composable(route = Screen.Welcome.route) {
             WelcomeScreen(
@@ -38,9 +39,12 @@ fun NavGraph(
             LoginScreen(
                 onBackClick = { navController.popBackStack() },
                 onSignUpClick = { navController.navigate(Screen.SignUp.route) },
-                onLoginSuccess = { navController.navigate(Screen.Dashboard.route) {
-                    popUpTo(Screen.Welcome.route) { inclusive = true }
-                }}
+                onLoginSuccess = { 
+                    val navOptions = NavOptions.Builder()
+                        .setPopUpTo(Screen.Welcome.route, inclusive = true)
+                        .build()
+                    navController.navigate(Screen.Dashboard.route, navOptions)
+                }
             )
         }
         
@@ -48,9 +52,12 @@ fun NavGraph(
             SignUpScreen(
                 onBackClick = { navController.popBackStack() },
                 onSignInClick = { navController.navigate(Screen.Login.route) },
-                onSignUpSuccess = { navController.navigate(Screen.Dashboard.route) {
-                    popUpTo(Screen.Welcome.route) { inclusive = true }
-                }}
+                onSignUpSuccess = { 
+                    val navOptions = NavOptions.Builder()
+                        .setPopUpTo(Screen.Welcome.route, inclusive = true)
+                        .build()
+                    navController.navigate(Screen.Dashboard.route, navOptions)
+                }
             )
         }
         
@@ -78,9 +85,10 @@ fun NavGraph(
             val context = LocalContext.current
             BudgetScreen(
                 onNavigateBack = {
-                    navController.navigate(Screen.Dashboard.route) {
-                        popUpTo(Screen.Dashboard.route) { inclusive = true }
-                    }
+                    val navOptions = NavOptions.Builder()
+                        .setPopUpTo(Screen.Dashboard.route, inclusive = true)
+                        .build()
+                    navController.navigate(Screen.Dashboard.route, navOptions)
                 },
                 onNavigateToAddBudget = {
                     navController.navigate(Screen.AddBudget.route)
@@ -134,61 +142,88 @@ fun NavGraph(
 
         composable(route = Screen.Settings.route) {
             SettingsScreen(
-                onNavigate = { tabIndex ->
-                    when (tabIndex) {
-                        0 -> navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(Screen.Dashboard.route) { inclusive = true }
-                        }
-                        1 -> navController.navigate(Screen.Transactions.route) {
-                            popUpTo(Screen.Transactions.route) { inclusive = true }
-                        }
-                        2 -> navController.navigate(Screen.Budget.route) {
-                            popUpTo(Screen.Budget.route) { inclusive = true }
-                        }
-                    }
+                onNavigateBack = {
+                    val navOptions = NavOptions.Builder()
+                        .setPopUpTo(Screen.Dashboard.route, inclusive = false)
+                        .build()
+                    navController.navigate(Screen.Dashboard.route, navOptions)
+                },
+                onNavigateToChangePassword = {
+                    navController.navigate(Screen.ChangePassword.route)
+                },
+                onNavigateToTransactions = {
+                    val navOptions = NavOptions.Builder()
+                        .setPopUpTo(Screen.Settings.route, inclusive = true)
+                        .build()
+                    navController.navigate(Screen.Transactions.route, navOptions)
+                },
+                onBudgetClick = {
+                    val navOptions = NavOptions.Builder()
+                        .setPopUpTo(Screen.Settings.route, inclusive = true)
+                        .build()
+                    navController.navigate(Screen.Budget.route, navOptions)
                 },
                 onSignOut = {
+                    val navOptions = NavOptions.Builder()
+                        .setPopUpTo(route = Screen.Welcome.route, inclusive = true)
+                        .build()
                     FirebaseAuth.getInstance().signOut()
-                    navController.navigate(Screen.Welcome.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
+                    navController.navigate(Screen.Welcome.route, navOptions)
                 }
             )
         }
 
         composable(route = Screen.AddTransaction.route) {
+            val navigatedFrom = navController.previousBackStackEntry?.destination?.route
             AddTransactionScreen(
                 onNavigateBack = {
+                    if (navigatedFrom == Screen.Transactions.route) {
+                        navController.navigate(Screen.Transactions.route) {
+                            popUpTo(Screen.Transactions.route) { inclusive = true }
+                        }
+                    } else {
                     navController.popBackStack()
+                    }
                 },
                 onSaveTransaction = { type, title, amount, category, date, note ->
-                    // TODO: Handle saving transaction
-                    navController.popBackStack()
+                    if (navigatedFrom == Screen.Transactions.route) {
+                        navController.navigate(Screen.Transactions.route) {
+                            popUpTo(Screen.Transactions.route) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    }
                 },
                 onNavigateToDashboard = {
                     navController.navigate(Screen.Dashboard.route) {
                         popUpTo(Screen.Dashboard.route) { inclusive = true }
                     }
-                }
+                },
+                navigatedFrom = if (navigatedFrom == Screen.Dashboard.route) "dashboard" else "transactions"
             )
         }
 
         composable(route = Screen.Transactions.route) {
             TransactionScreen(
                 onNavigateToHome = {
-                    navController.navigate(Screen.Dashboard.route) {
-                        popUpTo(Screen.Dashboard.route) { inclusive = true }
-                    }
+                    val navOptions = NavOptions.Builder()
+                        .setPopUpTo(Screen.Dashboard.route, inclusive = true)
+                        .build()
+                    navController.navigate(Screen.Dashboard.route, navOptions)
                 },
                 onNavigateToStats = {
-                    navController.navigate(Screen.Budget.route) {
-                        popUpTo(Screen.Budget.route) { inclusive = true }
-                    }
+                    val navOptions = NavOptions.Builder()
+                        .setPopUpTo(Screen.Budget.route, inclusive = true)
+                        .build()
+                    navController.navigate(Screen.Budget.route, navOptions)
                 },
                 onNavigateToSettings = {
-                    navController.navigate(Screen.Settings.route) {
-                        popUpTo(Screen.Settings.route) { inclusive = true }
-                    }
+                    val navOptions = NavOptions.Builder()
+                        .setPopUpTo(Screen.Settings.route, inclusive = true)
+                        .build()
+                    navController.navigate(Screen.Settings.route, navOptions)
                 },
                 onNavigateToAddTransaction = {
                     navController.navigate(Screen.AddTransaction.route)
@@ -232,6 +267,15 @@ fun NavGraph(
                     navController.popBackStack()
                 },
                 context = context
+            )
+        }
+
+        // Add the ChangePassword route
+        composable(route = Screen.ChangePassword.route) {
+            ChangePasswordScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
     }

@@ -412,7 +412,7 @@ fun AddBudgetScreen(
                     value = budgetLimit,
                     onValueChange = { budgetLimit = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("0.00", color = Color.White.copy(alpha = 0.5f)) },
+                    placeholder = { Text("0", color = Color.White.copy(alpha = 0.5f)) },
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color(0xFF2A2F3C),
                         focusedBorderColor = Color(0xFF8D5CF5),

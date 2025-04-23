@@ -18,7 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.navigation.compose.rememberNavController
-import com.fallen.spenwise.navigation.NavGraph
+import com.fallen.spenwise.navigation.SetupNavGraph
 import com.fallen.spenwise.ui.theme.SpendWiseTheme
 import com.fallen.spenwise.utils.PreferenceManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -123,9 +123,9 @@ class MainActivity : ComponentActivity() {
                     }
                     
                     if (!isCheckingAuth) {
-                        NavGraph(
+                        SetupNavGraph(
                             navController = navController,
-                            initialDestination = initialDestination
+                            startDestination = initialDestination
                         )
                     }
                 }

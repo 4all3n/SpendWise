@@ -29,7 +29,7 @@ fun BottomNavigationBar(
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = Color(0xFF1B1E27),
-            shadowElevation = 24.dp
+            shadowElevation = 0.dp
         ) {
             Row(
                 modifier = Modifier

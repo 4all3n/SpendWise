@@ -63,7 +63,8 @@ import java.util.*
 fun AddTransactionScreen(
     onNavigateBack: () -> Unit,  // Callback for navigating back
     onSaveTransaction: (String, String, Double, String, Date, String?) -> Unit,  // Callback for saving transaction
-    onNavigateToDashboard: () -> Unit  // New callback for navigating to dashboard
+    onNavigateToDashboard: () -> Unit,  // Callback for navigating to dashboard
+    navigatedFrom: String = "dashboard"  // New parameter to track navigation source
 ) {
     // State variables for form fields
     var selectedTab by remember { mutableStateOf(0) }  // 0 for Expense, 1 for Income
@@ -92,7 +93,7 @@ fun AddTransactionScreen(
     LaunchedEffect(selectedTab) {
         title = ""
         amount = ""
-        selectedCategory = "Food & Dining"
+        selectedCategory = if (selectedTab == 0) "Food & Dining" else "Salary"
         note = ""
         selectedDate = dateFormatter.format(Date())
     }
@@ -281,7 +282,7 @@ fun AddTransactionScreen(
                     value = amount,
                     onValueChange = { if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*$"))) amount = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("0.00", color = Color.White.copy(alpha = 0.5f)) },
+                    placeholder = { Text("0", color = Color.White.copy(alpha = 0.5f)) },
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color(0xFF2A2F3C),
                         focusedBorderColor = if (selectedTab == 0) Color(0xFF8D5CF5) else Color(0xFF4CAF50),
@@ -638,8 +639,12 @@ fun AddTransactionScreen(
                                         Toast.LENGTH_SHORT
                                     ).show()
                                     
-                                    // Navigate to dashboard after successful save
+                                    // Navigate based on source
+                                    if (navigatedFrom == "dashboard") {
                                     onNavigateToDashboard()
+                                    } else {
+                                        onNavigateBack()
+                                    }
                                 } else {
                                     // Show error message
                                     Toast.makeText(

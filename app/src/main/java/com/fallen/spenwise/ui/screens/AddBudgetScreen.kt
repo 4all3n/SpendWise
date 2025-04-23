@@ -72,7 +72,7 @@ fun AddBudgetScreen(
     onNavigateBack: () -> Unit,
     onSaveBudget: (String, Double, Date, Date) -> Unit
 ) {
-    var selectedCategory by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("Food & Dining") }
     var startDate by remember { mutableStateOf(Date()) }
     var endDate by remember { 
         mutableStateOf(Calendar.getInstance().apply {

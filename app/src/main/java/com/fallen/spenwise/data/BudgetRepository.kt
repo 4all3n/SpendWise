@@ -73,6 +73,11 @@ class BudgetRepository(context: Context) {
         return 0
     }
 
+    // Delete a budget by category
+    fun deleteBudget(uid: String, category: String): Boolean {
+        return dbHelper.deleteBudget(uid, category)
+    }
+
     // Check if a budget is exceeded for a category
     fun isBudgetExceeded(uid: String, category: String): Boolean {
         val remaining = getBudgetRemaining(uid, category)

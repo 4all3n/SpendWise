@@ -286,6 +286,15 @@ class DatabaseHelper(private val appContext: Context) : SQLiteOpenHelper(appCont
         return budgets
     }
 
+    // Delete a budget by category
+    fun deleteBudget(uid: String, category: String): Boolean {
+        val db = this.writableDatabase
+        val whereClause = "$COLUMN_UID = ? AND $COLUMN_CATEGORY = ?"
+        val whereArgs = arrayOf(uid, category)
+        val result = db.delete(TABLE_BUDGET, whereClause, whereArgs)
+        return result > 0
+    }
+
     // Get all transactions (both income and expenses) for a user
     fun getAllTransactions(uid: String): List<Map<String, Any>> {
         val transactions = ArrayList<Map<String, Any>>()

@@ -36,12 +36,19 @@ import com.fallen.spenwise.ui.components.BottomNavigationBar
 import java.text.SimpleDateFormat
 import java.util.*
 import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BudgetScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAddBudget: () -> Unit,
+    onNavigateToTransactions: () -> Unit,  // Add this parameter
+    onSettingsClick: () -> Unit,  // Also add this since it's used but not defined
     context: android.content.Context
 ) {
     var selectedMonth by remember { mutableStateOf(getCurrentMonth()) }
@@ -50,7 +57,7 @@ fun BudgetScreen(
     // Get data from database
     val budgetRepository = remember { BudgetRepository(context) }
     val currentUser = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "current_user" }
-    val budgets by remember { mutableStateOf(budgetRepository.getActiveBudgets(currentUser)) }
+    var budgets by remember { mutableStateOf(budgetRepository.getActiveBudgets(currentUser)) }
     
     // Calculate total budget and spent amounts
     val totalBudget = remember(budgets) {
@@ -262,12 +269,23 @@ fun BudgetScreen(
             // Categories List
             Column {
                 categories.forEach { category ->
-                CategoryCard(
-                    category = category,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 8.dp)
-                )
+                    CategoryCard(
+                        category = category,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 8.dp),
+                        onDelete = {
+                            val currentUser = FirebaseAuth.getInstance().currentUser?.uid ?: "current_user"
+                            val budgetRepository = BudgetRepository(context)
+                            if (budgetRepository.deleteBudget(currentUser, category.name)) {
+                                Toast.makeText(context, "Budget deleted successfully", Toast.LENGTH_SHORT).show()
+                                // Refresh the budgets list
+                                budgets = budgetRepository.getActiveBudgets(currentUser)
+                            } else {
+                                Toast.makeText(context, "Failed to delete budget", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    )
                 }
             }
 
@@ -286,8 +304,8 @@ fun BudgetScreen(
                         selectedTab = newTab
                         when (newTab) {
                             0 -> onNavigateBack() // Navigate back to Dashboard
-                            1 -> { /* Navigate to Transactions */ }
-                            3 -> { /* Navigate to Settings */ }
+                            1 -> onNavigateToTransactions()
+                            3 -> onSettingsClick()
                         }
                     }
                 }
@@ -296,13 +314,21 @@ fun BudgetScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CategoryCard(
     category: BudgetCategory,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDelete: () -> Unit
 ) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    
     Surface(
-        modifier = modifier,
+        modifier = modifier
+            .combinedClickable(
+                onClick = { /* Handle normal click if needed */ },
+                onLongClick = { showDeleteDialog = true }
+            ),
         color = Color(0xFF282C35),
         shape = RoundedCornerShape(16.dp),
         tonalElevation = 4.dp
@@ -376,15 +402,43 @@ private fun CategoryCard(
 
             // Progress Bar
             LinearProgressIndicator(
-                progress = (category.spent / category.budget).toFloat(),
+                progress = { (category.spent / category.budget).toFloat() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
                 color = category.color,
-                trackColor = Color.White.copy(alpha = 0.1f)
+                trackColor = Color.White.copy(alpha = 0.1f),
             )
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Budget", color = Color.White) },
+            text = { Text("Are you sure you want to delete this budget?", color = Color.White.copy(alpha = 0.7f)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDelete()
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Delete", color = Color(0xFFEF4444))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteDialog = false }
+                ) {
+                    Text("Cancel", color = Color.White)
+                }
+            },
+            containerColor = Color(0xFF282C35),
+            titleContentColor = Color.White,
+            textContentColor = Color.White
+        )
     }
 }
 

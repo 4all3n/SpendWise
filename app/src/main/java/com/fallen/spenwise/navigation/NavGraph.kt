@@ -74,11 +74,17 @@ fun NavGraph(
             BudgetScreen(
                 onNavigateBack = {
                     navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(Screen.Dashboard.route) { inclusive = true }
-                        }
+                        popUpTo(Screen.Dashboard.route) { inclusive = true }
+                    }
                 },
                 onNavigateToAddBudget = {
                     navController.navigate(Screen.AddBudget.route)
+                },
+                onNavigateToTransactions = {
+                    navController.navigate(Screen.Transactions.route)
+                },
+                onSettingsClick = {
+                    navController.navigate(Screen.Settings.route)
                 },
                 context = context
             )

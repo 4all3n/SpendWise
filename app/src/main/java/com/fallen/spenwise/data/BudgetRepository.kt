@@ -1,6 +1,7 @@
 package com.fallen.spenwise.data
 
 import android.content.Context
+import android.content.ContentValues
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -76,6 +77,19 @@ class BudgetRepository(context: Context) {
     // Delete a budget by category
     fun deleteBudget(uid: String, category: String): Boolean {
         return dbHelper.deleteBudget(uid, category)
+    }
+
+    // Update a budget's limit
+    fun updateBudget(uid: String, category: String, newLimit: Double): Boolean {
+        val db = dbHelper.writableDatabase
+        val values = ContentValues()
+        values.put(DatabaseHelper.COLUMN_LIMIT, newLimit)
+        
+        val whereClause = "${DatabaseHelper.COLUMN_UID} = ? AND ${DatabaseHelper.COLUMN_CATEGORY} = ?"
+        val whereArgs = arrayOf(uid, category)
+        
+        val result = db.update(DatabaseHelper.TABLE_BUDGET, values, whereClause, whereArgs)
+        return result > 0
     }
 
     // Check if a budget is exceeded for a category

@@ -1,5 +1,6 @@
 package com.fallen.spenwise.ui.screens
 
+import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -40,13 +41,17 @@ import com.fallen.spenwise.data.TransactionRepository
 import com.fallen.spenwise.data.UserRepository
 import com.fallen.spenwise.data.DatabaseHelper
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DashboardScreen(
     onBudgetClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onAddTransaction: () -> Unit = {},
-    onNavigateToTransactions: () -> Unit = {}
+    onNavigateToTransactions: () -> Unit = {},
+    onNavigateToEditTransaction: (Int, Boolean) -> Unit = { _, _ -> }
 ) {
     val currentUser = FirebaseAuth.getInstance().currentUser
     val userName = currentUser?.displayName ?: "User"
@@ -64,6 +69,10 @@ fun DashboardScreen(
     var totalIncome by remember { mutableStateOf(0.0) }
     var totalExpenses by remember { mutableStateOf(0.0) }
     var categoryTotals by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
+    
+    // State for delete dialog
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var transactionToDelete by remember { mutableStateOf<Map<String, Any>?>(null) }
     
     // Load data when screen is created or when currentUserId changes
     LaunchedEffect(currentUserId) {
@@ -441,16 +450,81 @@ fun DashboardScreen(
             }
 
             // Recent Transactions List with spacing
-            items(transactions.take(5)) { transaction ->
-                TransactionItem(
-                    title = transaction[DatabaseHelper.COLUMN_TITLE] as String,
-                    amount = transaction[DatabaseHelper.COLUMN_AMOUNT] as Double,
-                    category = transaction[DatabaseHelper.COLUMN_CATEGORY] as String,
-                    date = transaction[DatabaseHelper.COLUMN_DATE] as String,
-                    isExpense = transaction["isExpense"] as Boolean
-                )
+            items(transactions.take(10)) { transaction ->
+                Box(
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                ) {
+                    TransactionItem(
+                        title = transaction[DatabaseHelper.COLUMN_TITLE] as String,
+                        amount = transaction[DatabaseHelper.COLUMN_AMOUNT] as Double,
+                        category = transaction[DatabaseHelper.COLUMN_CATEGORY] as String,
+                        date = transaction[DatabaseHelper.COLUMN_DATE] as String,
+                        note = transaction[DatabaseHelper.COLUMN_NOTE] as? String,
+                        isExpense = transaction["isExpense"] as Boolean,
+                        transactionId = transaction[DatabaseHelper.COLUMN_ID] as Int,
+                        onDelete = {
+                            transactionToDelete = transaction
+                            showDeleteDialog = true
+                        },
+                        onEdit = {
+                            onNavigateToEditTransaction(
+                                transaction[DatabaseHelper.COLUMN_ID] as Int,
+                                transaction["isExpense"] as Boolean
+                            )
+                        }
+                    )
+                }
                 Spacer(modifier = Modifier.height(12.dp))
             }
+        }
+
+        // Delete Confirmation Dialog
+        if (showDeleteDialog && transactionToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { 
+                    showDeleteDialog = false
+                    transactionToDelete = null
+                },
+                title = { Text("Delete Transaction") },
+                text = { Text("Are you sure you want to delete this transaction?") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val success = transactionRepository.deleteTransaction(
+                                transactionToDelete!![DatabaseHelper.COLUMN_ID] as Int,
+                                transactionToDelete!!["isExpense"] as Boolean
+                            )
+                            if (success) {
+                                Toast.makeText(context, "Transaction deleted successfully", Toast.LENGTH_SHORT).show()
+                                // Refresh transactions
+                                if (currentUserId != null) {
+                                    val expenses = transactionRepository.getExpenses(currentUserId)
+                                    val income = transactionRepository.getIncome(currentUserId)
+                                    transactions = (expenses.map { it + ("isExpense" to true) } +
+                                                 income.map { it + ("isExpense" to false) })
+                                            .sortedByDescending { it[DatabaseHelper.COLUMN_ID] as Int }
+                                }
+                            } else {
+                                Toast.makeText(context, "Failed to delete transaction", Toast.LENGTH_SHORT).show()
+                            }
+                            showDeleteDialog = false
+                            transactionToDelete = null
+                        }
+                    ) {
+                        Text("Delete", color = Color(0xFFEF4444))
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { 
+                            showDeleteDialog = false
+                            transactionToDelete = null
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
 
         // Bottom Navigation Bar
@@ -471,84 +545,99 @@ fun DashboardScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TransactionItem(
     title: String,
     amount: Double,
     category: String,
     date: String,
-    isExpense: Boolean
+    note: String?,
+    isExpense: Boolean,
+    transactionId: Int,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp)
-            .padding(horizontal = 8.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = Color(0xFF2A2F3C)
+            .combinedClickable(
+                onClick = onEdit,
+                onLongClick = onDelete
+            ),
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFF282C35),
+        tonalElevation = 4.dp
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Modern icon design with rounded corners
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                getCategoryColor(category).copy(alpha = 0.2f),
-                                getCategoryColor(category).copy(alpha = 0.1f)
-                            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Category Icon
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(getCategoryColor(category).copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = getCategoryIcon(category)),
+                        contentDescription = category,
+                        tint = getCategoryColor(category),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Transaction Details
+                Column {
+                    Text(
+                        text = title,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = category,
+                        fontSize = 14.sp,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                    if (!note.isNullOrEmpty()) {
+                        Text(
+                            text = note,
+                            fontSize = 12.sp,
+                            color = Color.White.copy(alpha = 0.5f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(id = getCategoryIcon(category)),
-                    contentDescription = category,
-                    tint = getCategoryColor(category),
-                    modifier = Modifier.size(22.dp)
-                )
+                    }
+                }
             }
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White
-                )
-                Text(
-                    text = category,
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.6f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            
+
+            // Amount
             Column(
                 horizontalAlignment = Alignment.End
             ) {
                 Text(
                     text = "${if (isExpense) "-" else "+"}₹${amount.toInt()}",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isExpense) Color.White else Color(0xFF4CAF50)
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isExpense) Color(0xFFEF4444) else Color(0xFF10B981)
                 )
                 Text(
                     text = date,
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.6f)
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.5f)
                 )
             }
         }

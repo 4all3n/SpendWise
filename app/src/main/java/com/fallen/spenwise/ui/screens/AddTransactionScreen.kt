@@ -124,12 +124,39 @@ fun AddTransactionScreen(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF1B1E27),  // Dark blue-gray
-                        Color(0xFF232731)   // Slightly lighter blue-gray
+                        Color(0xFF1B1E27),
+                        Color(0xFF232731)
                     )
                 )
             )
     ) {
+        // Background decorative elements
+        Box(
+            modifier = Modifier
+                .size(300.dp)
+                .offset(x = (-100).dp, y = (-100).dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFF8D5CF5).copy(alpha = 0.1f),
+                            Color(0xFF8D5CF5).copy(alpha = 0.0f)
+                        )
+                    )
+                )
+        )
+        Box(
+            modifier = Modifier
+                .size(300.dp)
+                .offset(x = 200.dp, y = 400.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFFB06AB3).copy(alpha = 0.1f),
+                            Color(0xFFB06AB3).copy(alpha = 0.0f)
+                        )
+                    )
+                )
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()

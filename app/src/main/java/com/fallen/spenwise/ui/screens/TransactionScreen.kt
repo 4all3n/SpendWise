@@ -24,19 +24,23 @@ import com.fallen.spenwise.ui.components.BottomNavigationBar
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.platform.LocalContext
 import com.fallen.spenwise.data.DatabaseHelper
 import com.fallen.spenwise.data.TransactionRepository
 import com.fallen.spenwise.data.UserRepository
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TransactionScreen(
     onNavigateToHome: () -> Unit = {},
     onNavigateToStats: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
-    onNavigateToAddTransaction: () -> Unit = {}
+    onNavigateToAddTransaction: () -> Unit = {},
+    onNavigateToEditTransaction: (Int, Boolean) -> Unit = { _, _ -> }
 ) {
     var selectedTab by remember { mutableStateOf(1) }
     val context = LocalContext.current
@@ -131,12 +135,14 @@ fun TransactionScreen(
             FloatingActionButton(
                 onClick = onNavigateToAddTransaction,
                 containerColor = Color(0xFF8D5CF5),
-                shape = CircleShape
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.size(56.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add Transaction",
-                    tint = Color.White
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
@@ -245,6 +251,12 @@ fun TransactionScreen(
                                     onDelete = {
                                         transactionToDelete = transaction
                                         showDeleteDialog = true
+                                    },
+                                    onEdit = {
+                                        onNavigateToEditTransaction(
+                                            transaction[DatabaseHelper.COLUMN_ID] as Int,
+                                            transaction["isExpense"] as Boolean
+                                        )
                                     }
                                 )
                             }
@@ -256,6 +268,7 @@ fun TransactionScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TransactionItem(
     title: String,
@@ -265,110 +278,90 @@ private fun TransactionItem(
     note: String?,
     isExpense: Boolean,
     transactionId: Int,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(100.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = Color(0xFF2A2F3C),
+            .combinedClickable(
+                onClick = onEdit,
+                onLongClick = onDelete
+            ),
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFF282C35),
         tonalElevation = 4.dp
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Delete button in top right corner
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier
-                    .size(24.dp)
-                    .align(Alignment.TopEnd)
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_delete),
-                    contentDescription = "Delete Transaction",
-                    tint = Color(0xFFE57373)
-                )
-            }
-
-            // Main content
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Top section: Category icon and details
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Category Icon
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(getColorForCategory(category).copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Category icon with rounded square shape
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(getColorForCategory(category).copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(id = getIconForCategory(category)),
-                            contentDescription = category,
-                            tint = getColorForCategory(category),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+                    Icon(
+                        painter = painterResource(id = getIconForCategory(category)),
+                        contentDescription = category,
+                        tint = getColorForCategory(category),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
 
-                    // Transaction details
-                    Column {
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Transaction Details
+                Column {
+                    Text(
+                        text = title,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = category,
+                        fontSize = 14.sp,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                    if (!note.isNullOrEmpty()) {
                         Text(
-                            text = title,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White,
+                            text = note,
+                            fontSize = 12.sp,
+                            color = Color.White.copy(alpha = 0.5f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = category,
-                                fontSize = 14.sp,
-                                color = Color.White.copy(alpha = 0.7f)
-                            )
-                            if (!note.isNullOrEmpty()) {
-                                Text(
-                                    text = "•",
-                                    fontSize = 14.sp,
-                                    color = Color.White.copy(alpha = 0.5f)
-                                )
-                                Text(
-                                    text = note,
-                                    fontSize = 14.sp,
-                                    color = Color.White.copy(alpha = 0.7f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
                     }
                 }
+            }
 
-                // Bottom section: Amount aligned to the right
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Text(
-                        text = "${if (isExpense) "-" else "+"}₹${amount.toInt()}",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isExpense) Color(0xFFE57373) else Color(0xFF81C784)
-                    )
-                }
+            // Amount
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = "${if (isExpense) "-" else "+"}₹${amount.toInt()}",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isExpense) Color(0xFFEF4444) else Color(0xFF10B981)
+                )
+                Text(
+                    text = date,
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.5f)
+                )
             }
         }
     }

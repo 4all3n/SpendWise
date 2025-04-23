@@ -39,6 +39,9 @@ class DatabaseHelper(private val appContext: Context) : SQLiteOpenHelper(appCont
         const val COLUMN_LIMIT = "limit_amount"
         const val COLUMN_START_DATE = "start_date"
         const val COLUMN_END_DATE = "end_date"
+
+        // New column for user ID
+        const val COLUMN_USER_ID = "user_id"
     }
 
     override fun onCreate(db: SQLiteDatabase) {

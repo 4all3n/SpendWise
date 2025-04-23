@@ -47,8 +47,9 @@ import android.widget.Toast
 fun BudgetScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAddBudget: () -> Unit,
-    onNavigateToTransactions: () -> Unit,  // Add this parameter
-    onSettingsClick: () -> Unit,  // Also add this since it's used but not defined
+    onNavigateToTransactions: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onNavigateToEditBudget: (String, Double) -> Unit,
     context: android.content.Context
 ) {
     var selectedMonth by remember { mutableStateOf(getCurrentMonth()) }
@@ -72,6 +73,7 @@ fun BudgetScreen(
     }
     
     val remainingBudget = totalBudget - totalSpent
+    val isOverBudget = totalSpent > totalBudget
     
     // Convert budgets to BudgetCategory objects for display
     val categories = remember(budgets) {
@@ -102,6 +104,34 @@ fun BudgetScreen(
                 )
             )
     ) {
+        // Background decorative elements
+        Box(
+            modifier = Modifier
+                .size(300.dp)
+                .offset(x = (-100).dp, y = (-100).dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFF8D5CF5).copy(alpha = 0.1f),
+                            Color(0xFF8D5CF5).copy(alpha = 0.0f)
+                        )
+                    )
+                )
+        )
+        Box(
+            modifier = Modifier
+                .size(300.dp)
+                .offset(x = 200.dp, y = 400.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFFB06AB3).copy(alpha = 0.1f),
+                            Color(0xFFB06AB3).copy(alpha = 0.0f)
+                        )
+                    )
+                )
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -216,7 +246,7 @@ fun BudgetScreen(
                                     .fillMaxWidth()
                                     .height(8.dp)
                                     .clip(RoundedCornerShape(4.dp)),
-                                color = Color(0xFF8B5CF6),
+                                color = if (isOverBudget) Color(0xFFEF4444) else Color(0xFF8B5CF6),
                                 trackColor = Color.White.copy(alpha = 0.1f)
                             )
                             Row(
@@ -233,7 +263,7 @@ fun BudgetScreen(
                                 Text(
                                 text = "Remaining: ₹${remainingBudget.toInt()}",
                                     fontSize = 14.sp,
-                                    color = Color(0xFF10B981)
+                                    color = if (isOverBudget) Color(0xFFEF4444) else Color(0xFF10B981)
                                 )
                             }
                         }
@@ -284,6 +314,9 @@ fun BudgetScreen(
                             } else {
                                 Toast.makeText(context, "Failed to delete budget", Toast.LENGTH_SHORT).show()
                             }
+                        },
+                        onEdit = {
+                            onNavigateToEditBudget(category.name, category.budget)
                         }
                     )
                 }
@@ -319,14 +352,16 @@ fun BudgetScreen(
 private fun CategoryCard(
     category: BudgetCategory,
     modifier: Modifier = Modifier,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val isOverBudget = category.spent > category.budget
     
     Surface(
         modifier = modifier
             .combinedClickable(
-                onClick = { /* Handle normal click if needed */ },
+                onClick = { onEdit() },
                 onLongClick = { showDeleteDialog = true }
             ),
         color = Color(0xFF282C35),
@@ -375,7 +410,7 @@ private fun CategoryCard(
                         Text(
                             text = "${(category.spent / category.budget * 100).toInt()}% of budget",
                             fontSize = 14.sp,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = if (isOverBudget) Color(0xFFEF4444) else Color.White.copy(alpha = 0.7f)
                         )
                     }
                 }
@@ -407,7 +442,7 @@ private fun CategoryCard(
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
-                color = category.color,
+                color = if (isOverBudget) Color(0xFFEF4444) else category.color,
                 trackColor = Color.White.copy(alpha = 0.1f),
             )
         }

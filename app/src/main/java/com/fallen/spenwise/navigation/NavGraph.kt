@@ -11,6 +11,8 @@ import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+
+import androidx.navigation.NavType
 import com.fallen.spenwise.ui.screens.*
 import com.google.firebase.auth.FirebaseAuth
 import com.fallen.spenwise.data.BudgetRepository
@@ -65,6 +67,9 @@ fun NavGraph(
                 },
                 onNavigateToTransactions = {
                     navController.navigate(Screen.Transactions.route)
+                },
+                onNavigateToEditTransaction = { transactionId, isExpense ->
+                    navController.navigate("${Screen.EditTransaction.route}/$transactionId/$isExpense")
                 }
             )
         }
@@ -85,6 +90,9 @@ fun NavGraph(
                 },
                 onSettingsClick = {
                     navController.navigate(Screen.Settings.route)
+                },
+                onNavigateToEditBudget = { category, limit ->
+                    navController.navigate("${Screen.EditBudget.route}/$category/$limit")
                 },
                 context = context
             )
@@ -181,7 +189,49 @@ fun NavGraph(
                     navController.navigate(Screen.Settings.route) {
                         popUpTo(Screen.Settings.route) { inclusive = true }
                     }
+                },
+                onNavigateToAddTransaction = {
+                    navController.navigate(Screen.AddTransaction.route)
+                },
+                onNavigateToEditTransaction = { transactionId, isExpense ->
+                    navController.navigate("${Screen.EditTransaction.route}/$transactionId/$isExpense")
                 }
+            )
+        }
+
+        // Add the EditBudget route
+        composable(
+            route = "${Screen.EditBudget.route}/{category}/{limit}"
+        ) { backStackEntry ->
+            val category = backStackEntry.arguments?.getString("category") ?: ""
+            val limit = backStackEntry.arguments?.getString("limit")?.toDoubleOrNull() ?: 0.0
+            val context = LocalContext.current
+            
+            EditBudgetScreen(
+                categoryName = category,
+                currentLimit = limit,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                context = context
+            )
+        }
+
+        // Add the EditTransaction route
+        composable(
+            route = "${Screen.EditTransaction.route}/{transactionId}/{isExpense}"
+        ) { backStackEntry ->
+            val transactionId = backStackEntry.arguments?.getString("transactionId")?.toIntOrNull() ?: 0
+            val isExpense = backStackEntry.arguments?.getString("isExpense")?.toBoolean() ?: false
+            val context = LocalContext.current
+            
+            EditTransactionScreen(
+                transactionId = transactionId,
+                isExpense = isExpense,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                context = context
             )
         }
     }

@@ -36,6 +36,10 @@ import kotlin.math.min
 import com.fallen.spenwise.ui.components.BottomNavigationBar
 import com.fallen.spenwise.model.Transaction
 import com.fallen.spenwise.model.TransactionType
+import com.fallen.spenwise.data.TransactionRepository
+import com.fallen.spenwise.data.UserRepository
+import com.fallen.spenwise.data.DatabaseHelper
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun DashboardScreen(
@@ -48,7 +52,44 @@ fun DashboardScreen(
     val userName = currentUser?.displayName ?: "User"
     var selectedTab by remember { mutableStateOf(0) }
     val lazyListState = rememberLazyListState()
-    val transactions = remember { getSampleTransactions() }
+    
+    // Get repositories
+    val context = LocalContext.current
+    val transactionRepository = remember { TransactionRepository(context) }
+    val userRepository = remember { UserRepository(context) }
+    val currentUserId = remember { userRepository.getCurrentUserId() }
+    
+    // State for transactions and totals
+    var transactions by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var totalIncome by remember { mutableStateOf(0.0) }
+    var totalExpenses by remember { mutableStateOf(0.0) }
+    var categoryTotals by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
+    
+    // Load data when screen is created or when currentUserId changes
+    LaunchedEffect(currentUserId) {
+        if (currentUserId != null) {
+            // Get transactions
+            val expenses = transactionRepository.getExpenses(currentUserId)
+            val income = transactionRepository.getIncome(currentUserId)
+            
+            // Combine and sort transactions
+            val allTransactions = (expenses.map { it + ("isExpense" to true) } +
+                                income.map { it + ("isExpense" to false) })
+                .sortedByDescending { it[DatabaseHelper.COLUMN_ID] as Int }
+            
+            // Calculate totals
+            totalIncome = income.sumOf { it[DatabaseHelper.COLUMN_AMOUNT] as Double }
+            totalExpenses = expenses.sumOf { it[DatabaseHelper.COLUMN_AMOUNT] as Double }
+            
+            // Calculate category totals
+            categoryTotals = expenses.groupBy { it[DatabaseHelper.COLUMN_CATEGORY] as String }
+                .mapValues { (_, transactions) -> 
+                    transactions.sumOf { it[DatabaseHelper.COLUMN_AMOUNT] as Double }
+                }
+            
+            transactions = allTransactions
+        }
+    }
 
     // Animation states
     var isVisible by remember { mutableStateOf(false) }
@@ -205,7 +246,7 @@ fun DashboardScreen(
                                         )
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
-                                            text = "₹2,548.00",
+                                            text = "₹${(totalIncome - totalExpenses).toInt()}",
                                             fontSize = 32.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color.White
@@ -251,7 +292,7 @@ fun DashboardScreen(
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Text(
-                                            text = "+12.5%",
+                                            text = "+₹${totalIncome.toInt()}",
                                             fontSize = 14.sp,
                                             color = Color.White,
                                             fontWeight = FontWeight.Medium
@@ -283,30 +324,14 @@ fun DashboardScreen(
                             modifier = Modifier.padding(24.dp),
                             verticalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
-                            ExpenseCategoryItem(
-                                icon = R.drawable.ic_shopping,
-                                text = "Shopping",
-                                percentage = "35%",
-                                color = Color(0xFF8D5CF5)
-                            )
-                            ExpenseCategoryItem(
-                                icon = R.drawable.ic_food,
-                                text = "Food",
-                                percentage = "25%",
-                                color = Color(0xFFE96D71)
-                            )
-                            ExpenseCategoryItem(
-                                icon = R.drawable.ic_bills,
-                                text = "Bills",
-                                percentage = "20%",
-                                color = Color(0xFF4C9EFF)
-                            )
-                            ExpenseCategoryItem(
-                                icon = R.drawable.ic_others,
-                                text = "Others",
-                                percentage = "20%",
-                                color = Color(0xFF4CAF50)
-                            )
+                            categoryTotals.forEach { (category, amount) ->
+                                ExpenseCategoryItem(
+                                    icon = getCategoryIcon(category),
+                                    text = category,
+                                    percentage = "${((amount / totalExpenses) * 100).toInt()}%",
+                                    color = getCategoryColor(category)
+                                )
+                            }
                         }
                     }
 
@@ -416,8 +441,14 @@ fun DashboardScreen(
             }
 
             // Recent Transactions List with spacing
-            items(transactions) { transaction ->
-                TransactionItem(transaction = transaction)
+            items(transactions.take(5)) { transaction ->
+                TransactionItem(
+                    title = transaction[DatabaseHelper.COLUMN_TITLE] as String,
+                    amount = transaction[DatabaseHelper.COLUMN_AMOUNT] as Double,
+                    category = transaction[DatabaseHelper.COLUMN_CATEGORY] as String,
+                    date = transaction[DatabaseHelper.COLUMN_DATE] as String,
+                    isExpense = transaction["isExpense"] as Boolean
+                )
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
@@ -441,41 +472,13 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun QuickActionButton(
-    icon: Int,
-    text: String,
-    color: Color
+private fun TransactionItem(
+    title: String,
+    amount: Double,
+    category: String,
+    date: String,
+    isExpense: Boolean
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { /* TODO: Handle quick action */ }
-    ) {
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .clip(CircleShape)
-                .background(color.copy(alpha = 0.2f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                painter = painterResource(id = icon),
-                contentDescription = text,
-                tint = color,
-                modifier = Modifier.size(32.dp)
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = text,
-            fontSize = 14.sp,
-            color = Color.White,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-@Composable
-private fun TransactionItem(transaction: Transaction) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -498,63 +501,19 @@ private fun TransactionItem(transaction: Transaction) {
                     .background(
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                transaction.color.copy(alpha = 0.2f),
-                                transaction.color.copy(alpha = 0.1f)
+                                getCategoryColor(category).copy(alpha = 0.2f),
+                                getCategoryColor(category).copy(alpha = 0.1f)
                             )
                         )
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                when (transaction.type) {
-                    TransactionType.FOOD -> Icon(
-                        painter = painterResource(id = R.drawable.ic_food),
-                        contentDescription = "Food",
-                        tint = transaction.color,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    TransactionType.SHOPPING -> Icon(
-                        painter = painterResource(id = R.drawable.ic_shopping),
-                        contentDescription = "Shopping",
-                        tint = transaction.color,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    TransactionType.TRANSPORT -> Icon(
-                        painter = painterResource(id = R.drawable.ic_others),
-                        contentDescription = "Transport",
-                        tint = transaction.color,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    TransactionType.ENTERTAINMENT -> Icon(
-                        painter = painterResource(id = R.drawable.ic_others),
-                        contentDescription = "Entertainment",
-                        tint = transaction.color,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    TransactionType.INCOME -> Icon(
-                        painter = painterResource(id = R.drawable.ic_wallet),
-                        contentDescription = "Income",
-                        tint = transaction.color,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    TransactionType.EXPENSE -> Icon(
-                        painter = painterResource(id = R.drawable.ic_others),
-                        contentDescription = "Expense",
-                        tint = transaction.color,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    TransactionType.BILLS -> Icon(
-                        painter = painterResource(id = R.drawable.ic_bills),
-                        contentDescription = "Bills",
-                        tint = transaction.color,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    TransactionType.OTHERS -> Icon(
-                        painter = painterResource(id = R.drawable.ic_others),
-                        contentDescription = "Others",
-                        tint = transaction.color,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
+                Icon(
+                    painter = painterResource(id = getCategoryIcon(category)),
+                    contentDescription = category,
+                    tint = getCategoryColor(category),
+                    modifier = Modifier.size(22.dp)
+                )
             }
             
             Spacer(modifier = Modifier.width(16.dp))
@@ -563,13 +522,13 @@ private fun TransactionItem(transaction: Transaction) {
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = transaction.title,
+                    text = title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White
                 )
                 Text(
-                    text = transaction.subtitle,
+                    text = category,
                     fontSize = 13.sp,
                     color = Color.White.copy(alpha = 0.6f),
                     maxLines = 1,
@@ -581,13 +540,13 @@ private fun TransactionItem(transaction: Transaction) {
                 horizontalAlignment = Alignment.End
             ) {
                 Text(
-                    text = transaction.amount,
+                    text = "${if (isExpense) "-" else "+"}₹${amount.toInt()}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (transaction.amount.startsWith("+")) Color(0xFF4CAF50) else Color.White
+                    color = if (isExpense) Color.White else Color(0xFF4CAF50)
                 )
                 Text(
-                    text = transaction.date,
+                    text = date,
                     fontSize = 13.sp,
                     color = Color.White.copy(alpha = 0.6f)
                 )
@@ -642,64 +601,32 @@ private fun ExpenseCategoryItem(
     }
 }
 
-private fun formatCurrency(amount: Double): String {
-    return NumberFormat.getCurrencyInstance(Locale.US).format(amount)
-}
-
-private fun getIconForType(type: TransactionType): Int {
-    return when (type) {
-        TransactionType.FOOD -> R.drawable.ic_food
-        TransactionType.SHOPPING -> R.drawable.ic_shopping
-        TransactionType.TRANSPORT -> R.drawable.ic_others
-        TransactionType.ENTERTAINMENT -> R.drawable.ic_entertainment
-        TransactionType.INCOME -> R.drawable.ic_wallet
-        TransactionType.EXPENSE -> R.drawable.ic_others
-        TransactionType.BILLS -> R.drawable.ic_bills
-        TransactionType.OTHERS -> R.drawable.ic_others
+private fun getCategoryIcon(category: String): Int {
+    return when (category.lowercase()) {
+        "food & dining" -> R.drawable.ic_food
+        "travel" -> R.drawable.ic_travel
+        "shopping" -> R.drawable.ic_shopping
+        "entertainment" -> R.drawable.ic_entertainment
+        "bills" -> R.drawable.ic_bills
+        "salary" -> R.drawable.ic_wallet
+        "freelance" -> R.drawable.ic_freelance
+        "investment" -> R.drawable.ic_investment
+        "others" -> R.drawable.ic_others
+        else -> R.drawable.ic_others
     }
 }
 
-private fun getSampleTransactions(): List<Transaction> {
-    return listOf(
-        Transaction(
-            type = TransactionType.FOOD,
-            color = Color(0xFF8D5CF5),
-            title = "Restaurant",
-            subtitle = "Food & Dining",
-            amount = "-₹25.00",
-            date = "Today"
-        ),
-        Transaction(
-            type = TransactionType.INCOME,
-            color = Color(0xFF4CAF50),
-            title = "Salary Deposit",
-            subtitle = "Income",
-            amount = "+₹3,500.00",
-            date = "Today"
-        ),
-        Transaction(
-            type = TransactionType.SHOPPING,
-            color = Color(0xFFB06AB3),
-            title = "Shopping",
-            subtitle = "Grocery store",
-            amount = "-₹125.30",
-            date = "Yesterday"
-        ),
-        Transaction(
-            type = TransactionType.TRANSPORT,
-            color = Color(0xFFE96D71),
-            title = "Transport",
-            subtitle = "Uber ride",
-            amount = "-₹22.15",
-            date = "Yesterday"
-        ),
-        Transaction(
-            type = TransactionType.ENTERTAINMENT,
-            color = Color(0xFF8D5CF5),
-            title = "Entertainment",
-            subtitle = "Cinema tickets",
-            amount = "-₹35.00",
-            date = "23 Mar"
-        )
-    )
+private fun getCategoryColor(category: String): Color {
+    return when (category.lowercase()) {
+        "food & dining" -> Color(0xFF8B5CF6)
+        "travel" -> Color(0xFF10B981)
+        "shopping" -> Color(0xFFEF4444)
+        "entertainment" -> Color(0xFFF59E0B)
+        "bills" -> Color(0xFF3B82F6)
+        "salary" -> Color(0xFF4CAF50)
+        "freelance" -> Color(0xFFFF9800)
+        "investment" -> Color(0xFF9C27B0)
+        "others" -> Color(0xFF6B7280)
+        else -> Color(0xFF6B7280)
+    }
 } 

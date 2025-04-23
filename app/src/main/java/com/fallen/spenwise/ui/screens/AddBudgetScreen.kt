@@ -59,21 +59,32 @@ import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.SelectableDates
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.unit.IntSize
+import com.fallen.spenwise.data.BudgetRepository
+import com.fallen.spenwise.data.UserRepository
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddBudgetScreen(
     onNavigateBack: () -> Unit,
-    onSaveBudget: (String, String, String, Double) -> Unit
+    onSaveBudget: (String, Double, Date, Date) -> Unit
 ) {
     var selectedCategory by remember { mutableStateOf("") }
-    var startDate by remember { mutableStateOf(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())) }
-    var endDate by remember { mutableStateOf(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())) }
-    var limit by remember { mutableStateOf("") }
+    var startDate by remember { mutableStateOf(Date()) }
+    var endDate by remember { 
+        mutableStateOf(Calendar.getInstance().apply {
+            time = Date()
+            add(Calendar.MONTH, 1)
+        }.time)
+    }
+    var budgetLimit by remember { mutableStateOf("") }
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
-    val dateFormatter = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+    val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     
@@ -95,6 +106,11 @@ fun AddBudgetScreen(
     
     var isExpanded by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    val userRepository = remember { UserRepository(context) }
+    val budgetRepository = remember { BudgetRepository(context) }
+    val currentUserId = remember { userRepository.getCurrentUserId() }
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -292,7 +308,7 @@ fun AddBudgetScreen(
                 )
 
                 OutlinedTextField(
-                    value = startDate,
+                    value = dateFormatter.format(startDate),
                     onValueChange = { },
                     readOnly = true,
                     modifier = Modifier
@@ -329,7 +345,7 @@ fun AddBudgetScreen(
                 )
 
                 OutlinedTextField(
-                    value = endDate,
+                    value = dateFormatter.format(endDate),
                     onValueChange = { },
                     readOnly = true,
                     modifier = Modifier
@@ -366,8 +382,8 @@ fun AddBudgetScreen(
                 )
 
                 OutlinedTextField(
-                    value = limit,
-                    onValueChange = { if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*$"))) limit = it },
+                    value = budgetLimit,
+                    onValueChange = { budgetLimit = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("0.00", color = Color.White.copy(alpha = 0.5f)) },
                     colors = OutlinedTextFieldDefaults.colors(
@@ -395,17 +411,17 @@ fun AddBudgetScreen(
                 // Save button
                 Button(
                     onClick = {
-                        if (selectedCategory.isNotEmpty() && limit.isNotEmpty()) {
-                            onSaveBudget(selectedCategory, startDate, endDate, limit.toDoubleOrNull() ?: 0.0)
-                            // Show success message
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Budget saved successfully")
-                            }
-                        } else {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Please fill all required fields")
-                            }
+                        val limit = budgetLimit.toDoubleOrNull() ?: 0.0
+                        if (selectedCategory.isEmpty()) {
+                            Toast.makeText(context, "Please select a category", Toast.LENGTH_SHORT).show()
+                            return@Button
                         }
+                        if (budgetLimit.isEmpty()) {
+                            Toast.makeText(context, "Please enter a budget limit", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        android.util.Log.d("AddBudgetScreen", "Saving budget: category=$selectedCategory, limit=$limit, startDate=$startDate, endDate=$endDate")
+                        onSaveBudget(selectedCategory, limit, startDate, endDate)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -433,7 +449,7 @@ fun AddBudgetScreen(
             val today = calendar.timeInMillis
 
             val datePickerState = rememberDatePickerState(
-                initialSelectedDateMillis = dateFormatter.parse(startDate)?.time,
+                initialSelectedDateMillis = startDate.time,
                 initialDisplayedMonthMillis = null,
                 yearRange = IntRange(2020, 2030),
                 initialDisplayMode = DisplayMode.Picker,
@@ -451,7 +467,7 @@ fun AddBudgetScreen(
                         onClick = {
                             datePickerState.selectedDateMillis?.let { millis ->
                                 if (millis <= today) {
-                                    startDate = dateFormatter.format(Date(millis))
+                                    startDate = Date(millis)
                                 }
                             }
                             showStartDatePicker = false
@@ -504,7 +520,7 @@ fun AddBudgetScreen(
             val today = calendar.timeInMillis
 
             val datePickerState = rememberDatePickerState(
-                initialSelectedDateMillis = dateFormatter.parse(endDate)?.time,
+                initialSelectedDateMillis = endDate.time,
                 initialDisplayedMonthMillis = null,
                 yearRange = IntRange(2020, 2030),
                 initialDisplayMode = DisplayMode.Picker
@@ -516,7 +532,7 @@ fun AddBudgetScreen(
                     TextButton(
                         onClick = {
                             datePickerState.selectedDateMillis?.let { millis ->
-                                endDate = dateFormatter.format(Date(millis))
+                                endDate = Date(millis)
                             }
                             showEndDatePicker = false
                         }

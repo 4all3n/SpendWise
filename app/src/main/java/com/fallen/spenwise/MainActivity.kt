@@ -33,12 +33,17 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.ui.platform.LocalContext
 import com.fallen.spenwise.navigation.Screen
 import kotlinx.coroutines.delay
+import com.fallen.spenwise.data.UserRepository
 
 class MainActivity : ComponentActivity() {
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Initialize user in local database if needed
+        val userRepository = UserRepository(this)
+        userRepository.initializeUserIfNeeded()
         
         // Enable edge-to-edge
         WindowCompat.setDecorFitsSystemWindows(window, false)

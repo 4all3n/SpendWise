@@ -1,6 +1,7 @@
 package com.fallen.spenwise.navigation
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,6 +13,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.fallen.spenwise.ui.screens.*
 import com.google.firebase.auth.FirebaseAuth
+import com.fallen.spenwise.data.BudgetRepository
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun NavGraph(
@@ -67,33 +70,49 @@ fun NavGraph(
         }
 
         composable(route = Screen.Budget.route) {
+            val context = LocalContext.current
             BudgetScreen(
-                onNavigate = { tabIndex ->
-                    when (tabIndex) {
-                        0 -> navController.navigate(Screen.Dashboard.route) {
+                onNavigateBack = {
+                    navController.navigate(Screen.Dashboard.route) {
                             popUpTo(Screen.Dashboard.route) { inclusive = true }
                         }
-                        1 -> navController.navigate(Screen.Transactions.route) {
-                            popUpTo(Screen.Transactions.route) { inclusive = true }
-                        }
-                        3 -> navController.navigate(Screen.Settings.route) {
-                            popUpTo(Screen.Settings.route) { inclusive = true }
-                        }
-                    }
                 },
                 onNavigateToAddBudget = {
                     navController.navigate(Screen.AddBudget.route)
-                }
+                },
+                context = context
             )
         }
 
         composable(route = Screen.AddBudget.route) {
+            val context = LocalContext.current
             AddBudgetScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 },
-                onSaveBudget = { category, startDate, endDate, limit ->
-                    // TODO: Handle saving budget
+                onSaveBudget = { category, limit, startDate, endDate ->
+                    val currentUser = FirebaseAuth.getInstance().currentUser
+                    if (currentUser != null) {
+                        val budgetRepository = BudgetRepository(context)
+                        try {
+                            android.util.Log.d("NavGraph", "Adding budget for user ${currentUser.uid}: category=$category, limit=$limit")
+                            val result = budgetRepository.addBudget(
+                                currentUser.uid,
+                                category,
+                                limit,
+                                startDate,
+                                endDate
+                            )
+                            android.util.Log.d("NavGraph", "Budget added successfully with ID: $result")
+                            Toast.makeText(context, "Budget added successfully", Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            android.util.Log.e("NavGraph", "Error saving budget: ${e.message}", e)
+                            Toast.makeText(context, "Error saving budget: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        android.util.Log.e("NavGraph", "No user logged in")
+                        Toast.makeText(context, "You must be logged in to add a budget", Toast.LENGTH_SHORT).show()
+                    }
                     navController.popBackStack()
                 }
             )

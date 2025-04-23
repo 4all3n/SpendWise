@@ -60,12 +60,18 @@ import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.SelectableDates
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.unit.IntSize
+import com.fallen.spenwise.data.TransactionRepository
+import com.fallen.spenwise.data.UserRepository
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionScreen(
     onNavigateBack: () -> Unit,  // Callback for navigating back
-    onSaveTransaction: (TransactionType, String, Double, String, String, String) -> Unit  // Callback for saving transaction
+    onSaveTransaction: (String, String, Double, String, Date, String?) -> Unit  // Callback for saving transaction
 ) {
     // State variables for form fields
     var selectedTab by remember { mutableStateOf(0) }  // 0 for Expense, 1 for Income
@@ -81,6 +87,10 @@ fun AddTransactionScreen(
     val dateState = remember { mutableStateOf(selectedDate) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val userRepository = remember { UserRepository(context) }
+    val transactionRepository = remember { TransactionRepository(context) }
+    val currentUserId = remember { userRepository.getCurrentUserId() }
 
     // Category dropdown positioning
     var dropdownWidth by remember { mutableStateOf(0) }
@@ -564,30 +574,73 @@ fun AddTransactionScreen(
                 // Save button
                 Button(
                     onClick = {
-                        val type = if (selectedTab == 0) TransactionType.EXPENSE else TransactionType.INCOME
                         if (title.isNotEmpty() && amount.isNotEmpty() && selectedCategory.isNotEmpty()) {
-                            onSaveTransaction(
-                                type,
-                                title,
-                                amount.toDoubleOrNull() ?: 0.0,
-                                selectedCategory,
-                                selectedDate,
-                                note
-                            )
-                            // Reset fields after saving
-                            title = ""
-                            amount = ""
-                            selectedCategory = ""
-                            note = ""
-                            selectedDate = dateFormatter.format(Date())
-                            // Show success message
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Transaction saved successfully")
+                            val transactionAmount = amount.toDoubleOrNull() ?: 0.0
+                            val transactionDate = dateFormatter.parse(selectedDate)?.time?.let { Date(it) } ?: Date()
+                            val transactionNote = note.takeIf { it.isNotEmpty() }
+                            
+                            if (currentUserId != null) {
+                                // Save to local database
+                                val result = if (selectedTab == 0) {
+                                    transactionRepository.addExpense(
+                                        currentUserId,
+                                        title,
+                                        transactionAmount,
+                                        selectedCategory,
+                                        transactionDate,
+                                        transactionNote
+                                    )
+                                } else {
+                                    transactionRepository.addIncome(
+                                        currentUserId,
+                                        title,
+                                        transactionAmount,
+                                        selectedCategory,
+                                        transactionDate,
+                                        transactionNote
+                                    )
+                                }
+                                
+                                if (result > 0) {
+                                    // Call the original callback for any additional processing
+                                    onSaveTransaction(
+                                        title,
+                                        amount,
+                                        transactionAmount,
+                                        selectedCategory,
+                                        transactionDate,
+                                        transactionNote
+                                    )
+                                    
+                                    // Show success message
+                                    Toast.makeText(
+                                        context,
+                                        "Transaction saved successfully",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    // Show error message
+                                    Toast.makeText(
+                                        context,
+                                        "Failed to save transaction",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            } else {
+                                // User not logged in
+                                Toast.makeText(
+                                    context,
+                                    "Please log in to save transactions",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         } else {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Please fill all required fields")
-                            }
+                            // Show validation error
+                            Toast.makeText(
+                                context,
+                                "Please fill all required fields",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     },
                     modifier = Modifier
